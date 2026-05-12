@@ -58,7 +58,7 @@ export function SubscriptionsPage() {
     e.preventDefault();
     await supabase.from('subscriptions').insert({
       user_id: user!.id,
-      name: form.name,
+      service_name: form.name,
       provider: form.provider,
       amount: parseFloat(form.amount),
       billing_cycle: form.billing_cycle,

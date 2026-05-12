@@ -77,9 +77,9 @@ export function BillsPage() {
       provider: form.provider,
       amount: parseFloat(form.amount) || 0,
       due_date: form.due_date,
-      is_recurring: form.is_recurring,
-      recurring_frequency: form.is_recurring ? form.recurring_frequency : '',
-      reminder_days_before: parseInt(form.reminder_days_before) || 3,
+      // is_recurring: form.is_recurring,
+      // recurring_frequency: form.is_recurring ? form.recurring_frequency : '',
+      reminder_days: parseInt(form.reminder_days_before) || 3,
       notes: form.notes,
     });
     setForm({
