@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   TrendingDown, Bell, CreditCard, Receipt,
   Landmark, AlertTriangle, CheckCircle2, Clock,
-  ArrowUpRight, Download, FileSpreadsheet, FileText,
+  ArrowUpRight, Download, FileSpreadsheet, FileText, Pencil, X, Check,
 } from 'lucide-react';
 
 interface ExpenseSummary {
@@ -72,16 +72,11 @@ function exportToExcel(
   loans: LoanItem[],
   monthlyBudget: number
 ) {
-  // Build CSV content for each section
   const now = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long' });
-
   const rows: string[] = [];
 
-  // Header
   rows.push(`Finance Dashboard Export - ${now}`);
   rows.push('');
-
-  // Summary
   rows.push('SUMMARY');
   rows.push('Metric,Value');
   rows.push(`Monthly Budget,₹${monthlyBudget.toLocaleString('en-IN')}`);
@@ -93,7 +88,6 @@ function exportToExcel(
   rows.push(`Upcoming Unpaid Bills,${upcomingBills.filter(b => !b.is_paid).length}`);
   rows.push('');
 
-  // Expense Breakdown
   rows.push('EXPENSE BREAKDOWN');
   rows.push('Category,Amount (₹),% of Total');
   expenseSummary.byCategory.forEach(cat => {
@@ -102,7 +96,6 @@ function exportToExcel(
   });
   rows.push('');
 
-  // Upcoming Bills
   rows.push('UPCOMING BILLS');
   rows.push('Bill Type,Provider,Amount (₹),Due Date,Status');
   upcomingBills.forEach(bill => {
@@ -112,7 +105,6 @@ function exportToExcel(
   });
   rows.push('');
 
-  // Subscriptions
   rows.push('ACTIVE SUBSCRIPTIONS');
   rows.push('Name,Amount (₹),Billing Cycle,Next Billing Date');
   subscriptions.forEach(sub => {
@@ -120,7 +112,6 @@ function exportToExcel(
   });
   rows.push('');
 
-  // Loans
   rows.push('ACTIVE LOANS');
   rows.push('Loan Type,Outstanding Balance (₹),EMI Amount (₹),EMI Due Date');
   loans.forEach(loan => {
@@ -138,19 +129,22 @@ function exportToExcel(
 }
 
 // ─── PDF Export ────────────────────────────────────────────────────────────────
-function exportToPDF(
+async function exportToPDF(
   expenseSummary: ExpenseSummary,
   upcomingBills: BillItem[],
   subscriptions: SubscriptionItem[],
   loans: LoanItem[],
   monthlyBudget: number
 ) {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: html2canvas } = await import('html2canvas');
+
   const now = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long' });
   const savings = monthlyBudget - expenseSummary.total;
   const totalEMI = loans.reduce((s, l) => s + Number(l.emi_amount), 0);
   const totalSubs = subscriptions.reduce((s, sub) => s + Number(sub.amount), 0);
 
-  const tableStyle = `border-collapse:collapse;width:100%;margin-bottom:20px;font-size:12px;`;
+  const tableStyle = `border-collapse:collapse;width:100%;margin-bottom:20px;font-size:12px;font-family:'Segoe UI',sans-serif;`;
   const thStyle = `background:#0f172a;color:#fff;padding:8px 12px;text-align:left;`;
   const tdStyle = `padding:7px 12px;border-bottom:1px solid #e2e8f0;`;
   const tdAltStyle = `padding:7px 12px;border-bottom:1px solid #e2e8f0;background:#f8fafc;`;
@@ -160,7 +154,7 @@ function exportToPDF(
     const color = categoryColors[cat.category] || '#94a3b8';
     const td = i % 2 === 0 ? tdStyle : tdAltStyle;
     return `<tr>
-      <td style="${td}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span>${cat.category}</td>
+      <td style="${td}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle;"></span>${cat.category}</td>
       <td style="${td}">₹${cat.total.toLocaleString('en-IN')}</td>
       <td style="${td}">${pct}%</td>
     </tr>`;
@@ -168,7 +162,7 @@ function exportToPDF(
 
   const billRows = upcomingBills.map((bill, i) => {
     const daysLeft = Math.ceil((new Date(bill.due_date).getTime() - Date.now()) / 86400000);
-    const status = bill.is_paid ? '✓ Paid' : daysLeft <= 0 ? '⚠ Overdue' : `${daysLeft}d left`;
+    const status = bill.is_paid ? 'Paid' : daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`;
     const statusColor = bill.is_paid ? '#16a34a' : daysLeft <= 3 ? '#dc2626' : '#64748b';
     const td = i % 2 === 0 ? tdStyle : tdAltStyle;
     return `<tr>
@@ -200,104 +194,106 @@ function exportToPDF(
     </tr>`;
   }).join('');
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <title>Finance Dashboard – ${now}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; color: #1e293b; background: #fff; padding: 40px; }
-    h1 { font-size: 24px; font-weight: 700; color: #0f172a; }
-    .subtitle { color: #64748b; font-size: 13px; margin-top: 4px; margin-bottom: 32px; }
-    h2 { font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 10px; margin-top: 28px; border-left: 4px solid #0d9488; padding-left: 10px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 8px; }
-    .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; }
-    .summary-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 600; margin-bottom: 4px; }
-    .summary-card .val { font-size: 20px; font-weight: 700; color: #0f172a; }
-    .savings { color: ${savings >= 0 ? '#16a34a' : '#dc2626'}; }
-    table { ${tableStyle} }
-    th { ${thStyle} }
-    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; }
-    @media print { body { padding: 24px; } }
-  </style>
-</head>
-<body>
-  <h1>Finance Dashboard</h1>
-  <p class="subtitle">Report generated on ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+  const html = `
+    <div id="pdf-content" style="width:794px;padding:40px;background:#fff;font-family:'Segoe UI',sans-serif;color:#1e293b;">
+      <h1 style="font-size:24px;font-weight:700;color:#0f172a;margin:0 0 4px;">Finance Dashboard</h1>
+      <p style="color:#64748b;font-size:13px;margin:0 0 32px;">
+        ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+      </p>
 
-  <h2>Summary</h2>
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="label">Monthly Budget</div>
-      <div class="val">₹${monthlyBudget.toLocaleString('en-IN')}</div>
+      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Summary</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+        ${[
+          ['Monthly Budget', `₹${monthlyBudget.toLocaleString('en-IN')}`],
+          ['Total Expenses', `₹${expenseSummary.total.toLocaleString('en-IN')}`],
+          ['Savings', `${savings >= 0 ? '+' : '-'}₹${Math.abs(savings).toLocaleString('en-IN')}`],
+          ['Subscriptions / mo', `₹${totalSubs.toLocaleString('en-IN')}`],
+          ['EMI / mo', `₹${totalEMI.toLocaleString('en-IN')}`],
+          ['Unpaid Bills', `${upcomingBills.filter(b => !b.is_paid).length}`],
+        ].map(([label, val]) => `
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;font-weight:600;margin-bottom:4px;">${label}</div>
+            <div style="font-size:20px;font-weight:700;color:#0f172a;">${val}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      ${expenseSummary.byCategory.length > 0 ? `
+      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Expense Breakdown</h2>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Category</th><th style="${thStyle}">Amount</th><th style="${thStyle}">% of Total</th></tr></thead>
+        <tbody>${categoryRows}</tbody>
+      </table>` : ''}
+
+      ${upcomingBills.length > 0 ? `
+      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Upcoming Bills</h2>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Bill Type</th><th style="${thStyle}">Provider</th><th style="${thStyle}">Amount</th><th style="${thStyle}">Due Date</th><th style="${thStyle}">Status</th></tr></thead>
+        <tbody>${billRows}</tbody>
+      </table>` : ''}
+
+      ${subscriptions.length > 0 ? `
+      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Active Subscriptions</h2>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Name</th><th style="${thStyle}">Amount</th><th style="${thStyle}">Billing Cycle</th><th style="${thStyle}">Next Date</th></tr></thead>
+        <tbody>${subRows}</tbody>
+      </table>` : ''}
+
+      ${loans.length > 0 ? `
+      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Active Loans</h2>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Loan Type</th><th style="${thStyle}">Outstanding Balance</th><th style="${thStyle}">EMI Amount</th><th style="${thStyle}">EMI Due Date</th></tr></thead>
+        <tbody>${loanRows}</tbody>
+      </table>` : ''}
+
+      <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
+        Generated by Finance Dashboard · ${now}
+      </div>
     </div>
-    <div class="summary-card">
-      <div class="label">Total Expenses</div>
-      <div class="val">₹${expenseSummary.total.toLocaleString('en-IN')}</div>
-    </div>
-    <div class="summary-card">
-      <div class="label">Savings</div>
-      <div class="val savings">${savings >= 0 ? '+' : '-'}₹${Math.abs(savings).toLocaleString('en-IN')}</div>
-    </div>
-    <div class="summary-card">
-      <div class="label">Subscriptions / mo</div>
-      <div class="val">₹${totalSubs.toLocaleString('en-IN')}</div>
-    </div>
-    <div class="summary-card">
-      <div class="label">EMI / mo</div>
-      <div class="val">₹${totalEMI.toLocaleString('en-IN')}</div>
-    </div>
-    <div class="summary-card">
-      <div class="label">Unpaid Bills</div>
-      <div class="val">${upcomingBills.filter(b => !b.is_paid).length}</div>
-    </div>
-  </div>
+  `;
 
-  ${expenseSummary.byCategory.length > 0 ? `
-  <h2>Expense Breakdown</h2>
-  <table>
-    <thead><tr><th>Category</th><th>Amount</th><th>% of Total</th></tr></thead>
-    <tbody>${categoryRows}</tbody>
-  </table>` : ''}
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+  container.innerHTML = html;
+  document.body.appendChild(container);
 
-  ${upcomingBills.length > 0 ? `
-  <h2>Upcoming Bills</h2>
-  <table>
-    <thead><tr><th>Bill Type</th><th>Provider</th><th>Amount</th><th>Due Date</th><th>Status</th></tr></thead>
-    <tbody>${billRows}</tbody>
-  </table>` : ''}
+  try {
+    const element = container.querySelector('#pdf-content') as HTMLElement;
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
 
-  ${subscriptions.length > 0 ? `
-  <h2>Active Subscriptions</h2>
-  <table>
-    <thead><tr><th>Name</th><th>Amount</th><th>Billing Cycle</th><th>Next Date</th></tr></thead>
-    <tbody>${subRows}</tbody>
-  </table>` : ''}
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
 
-  ${loans.length > 0 ? `
-  <h2>Active Loans</h2>
-  <table>
-    <thead><tr><th>Loan Type</th><th>Outstanding Balance</th><th>EMI Amount</th><th>EMI Due Date</th></tr></thead>
-    <tbody>${loanRows}</tbody>
-  </table>` : ''}
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  <div class="footer">Generated by Finance Dashboard · ${now}</div>
-</body>
-</html>`;
+    let heightLeft = imgHeight;
+    let position = 0;
 
-  const printWin = window.open('', '_blank', 'width=900,height=700');
-  if (!printWin) return;
-  printWin.document.write(html);
-  printWin.document.close();
-  printWin.focus();
-  setTimeout(() => {
-    printWin.print();
-    printWin.close();
-  }, 500);
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`finance-report-${now.replace(/\s/g, '-')}.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
 }
 
-// ─── Export Button ─────────────────────────────────────────────────────────────
+// ─── Export Menu ───────────────────────────────────────────────────────────────
 function ExportMenu({
   onExcelExport,
   onPDFExport,
@@ -319,7 +315,6 @@ function ExportMenu({
 
       {open && (
         <>
-          {/* backdrop */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-11 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-48">
             <button
@@ -352,7 +347,13 @@ export function Dashboard() {
   const [upcomingBills, setUpcomingBills] = useState<BillItem[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [loans, setLoans] = useState<LoanItem[]>([]);
-  const [monthlyBudget] = useState(50000);
+
+  // ── Budget state ──
+  const [monthlyBudget, setMonthlyBudget] = useState(50000);
+  const [editingBudget, setEditingBudget] = useState(false);
+  const [budgetInput, setBudgetInput] = useState('50000');
+  const [savingBudget, setSavingBudget] = useState(false);
+  const [budgetError, setBudgetError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -365,12 +366,18 @@ export function Dashboard() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    const [expensesRes, billsRes, subsRes, loansRes] = await Promise.all([
+    const [expensesRes, billsRes, subsRes, loansRes, settingsRes] = await Promise.all([
       supabase.from('expenses').select('amount, category').eq('user_id', user!.id).gte('expense_date', startOfMonth).lte('expense_date', endOfMonth),
       supabase.from('bills').select('id, bill_type, amount, due_date, is_paid, provider').eq('user_id', user!.id).gte('due_date', new Date().toISOString().split('T')[0]).order('due_date', { ascending: true }).limit(5),
       supabase.from('subscriptions').select('id, name, amount, billing_cycle, next_billing_date, is_active').eq('user_id', user!.id).eq('is_active', true),
       supabase.from('loans').select('id, loan_type, outstanding_balance, emi_amount, emi_due_date').eq('user_id', user!.id).eq('is_active', true),
+      supabase.from('user_settings').select('monthly_budget').eq('user_id', user!.id).single(),
     ]);
+
+    // Load budget — fall back to 50000 if no row yet
+    const budget = settingsRes.data?.monthly_budget ?? 50000;
+    setMonthlyBudget(budget);
+    setBudgetInput(String(budget));
 
     const expenses = expensesRes.data || [];
     const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -387,6 +394,37 @@ export function Dashboard() {
     setSubscriptions(subsRes.data || []);
     setLoans(loansRes.data || []);
     setLoading(false);
+  };
+
+  const saveBudget = async () => {
+    setBudgetError('');
+    const value = parseFloat(budgetInput);
+    if (isNaN(value) || value <= 0) {
+      setBudgetError('Enter a valid amount');
+      return;
+    }
+
+    setSavingBudget(true);
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert(
+        { user_id: user!.id, monthly_budget: value, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) {
+      setBudgetError('Failed to save. Try again.');
+    } else {
+      setMonthlyBudget(value);
+      setEditingBudget(false);
+    }
+    setSavingBudget(false);
+  };
+
+  const cancelBudgetEdit = () => {
+    setEditingBudget(false);
+    setBudgetInput(String(monthlyBudget));
+    setBudgetError('');
   };
 
   const totalSubscriptions = subscriptions.reduce((s, sub) => s + Number(sub.amount), 0);
@@ -410,7 +448,8 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page header with export */}
+
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Dashboard</h2>
@@ -429,19 +468,67 @@ export function Dashboard() {
         <StatCard title="EMI Due" value={`₹${totalEMI.toLocaleString('en-IN')}`} subtitle={`${loans.length} active loans`} icon={Landmark} iconBg="bg-rose-50" iconColor="text-rose-600" trend="neutral" />
       </div>
 
-      {/* Savings Progress */}
+      {/* Savings Progress with editable budget */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
             <h3 className="text-base font-semibold text-slate-900">Monthly Savings</h3>
-            <p className="text-sm text-slate-500">Budget: ₹{monthlyBudget.toLocaleString('en-IN')}</p>
+
+            {editingBudget ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-sm text-slate-400 font-medium">₹</span>
+                <input
+                  type="number"
+                  value={budgetInput}
+                  onChange={(e) => setBudgetInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveBudget();
+                    if (e.key === 'Escape') cancelBudgetEdit();
+                  }}
+                  className="w-36 text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  placeholder="e.g. 50000"
+                  autoFocus
+                />
+                <button
+                  onClick={saveBudget}
+                  disabled={savingBudget}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg disabled:opacity-50 transition-colors"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {savingBudget ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  onClick={cancelBudgetEdit}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Cancel
+                </button>
+                {budgetError && (
+                  <span className="text-xs text-red-500">{budgetError}</span>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setEditingBudget(true)}
+                className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 hover:text-teal-600 transition-colors group"
+              >
+                <span>Budget: ₹{monthlyBudget.toLocaleString('en-IN')}</span>
+                <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            )}
           </div>
-          <div className={`text-2xl font-bold ${savings >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+
+          <div className={`text-2xl font-bold ml-4 ${savings >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
             {savings >= 0 ? '+' : ''}₹{Math.abs(savings).toLocaleString('en-IN')}
           </div>
         </div>
+
         <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all duration-700 ${savings >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${savingsPercent}%` }} />
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${savings >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
+            style={{ width: `${savingsPercent}%` }}
+          />
         </div>
         <div className="flex justify-between mt-2 text-xs text-slate-400">
           <span>₹0</span>
@@ -469,7 +556,10 @@ export function Dashboard() {
                       <span className="text-sm text-slate-500">₹{cat.total.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${percent}%`, backgroundColor: categoryColors[cat.category] || '#94a3b8' }} />
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${percent}%`, backgroundColor: categoryColors[cat.category] || '#94a3b8' }}
+                      />
                     </div>
                   </div>
                 );
@@ -568,6 +658,7 @@ export function Dashboard() {
   );
 }
 
+// ─── StatCard ──────────────────────────────────────────────────────────────────
 function StatCard({ title, value, subtitle, icon: Icon, iconBg, iconColor, trend }: {
   title: string;
   value: string;

@@ -11,8 +11,9 @@ import { MaintenancePage } from './pages/MaintenancePage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { FamilyPage } from './pages/FamilyPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { MonthlyBudget } from './pages/MonthlyBudget';
 
-type Route = 'dashboard' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'family' | 'settings';
+type Route = 'dashboard' | 'monthlyBudget' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'family' | 'settings';
 
 export const navigate = {
   to: (_route: Route) => {},
@@ -43,6 +44,7 @@ export function AppRoutes() {
 
   const pages: Record<Route, ReactNode> = {
     dashboard: <Dashboard />,
+    monthlyBudget: <MonthlyBudget />,
     expenses: <ExpensesPage />,
     bills: <BillsPage />,
     subscriptions: <SubscriptionsPage />,

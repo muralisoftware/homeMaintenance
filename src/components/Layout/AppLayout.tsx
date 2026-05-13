@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { LayoutDashboard, Receipt, Bell, CreditCard, Landmark, Wrench, FolderLock,
-  Users, Settings, Menu, X, LogOut, Home, } from 'lucide-react';
+  Users, Settings, Menu, X, LogOut, Home,
+  Wallet, } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-type Route = 'dashboard' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'family' | 'settings';
+type Route = 'dashboard' | 'monthlyBudget' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'family' | 'settings';
 
 const navItems: { id: Route; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'monthlyBudget', label: 'Budget Master', icon: Wallet },
   { id: 'expenses', label: 'Expenses', icon: Receipt },
   { id: 'bills', label: 'Bill Reminders', icon: Bell },
   { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
