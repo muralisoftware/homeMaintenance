@@ -162,11 +162,11 @@ export function MonthlyBudget() {
       })
     : null;
 
-    if (loading) {
-        return (
-          <Spinner text="Loading your budget settings" />
-        );
-      }
+  if (loading) {
+    return (
+      <Spinner text="Loading your budget settings" />
+    );
+  }
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">

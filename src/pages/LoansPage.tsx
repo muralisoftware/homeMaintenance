@@ -141,6 +141,12 @@ export function LoansPage() {
 
   const loanPayments = selectedLoan ? payments.filter((p) => p.loan_id === selectedLoan) : [];
 
+  if (loading) {
+    return (
+      <Spinner text="Loading your loans..." />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -361,9 +367,7 @@ export function LoansPage() {
       )}
 
       {/* Loan List */}
-      {loading ? (
-        <Spinner  text="Loading your loans..." />
-      ) : loans.length === 0 ? (
+      {loans.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Landmark className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No loans tracked yet</p>

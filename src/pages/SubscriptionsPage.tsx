@@ -96,6 +96,12 @@ export function SubscriptionsPage() {
     return s + Number(sub.amount);
   }, 0);
 
+  if (loading) {
+    return (
+      <Spinner text="Loading your subscriptions..." />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -227,9 +233,7 @@ export function SubscriptionsPage() {
       )}
 
       {/* List */}
-      {loading ? (
-        <Spinner text="Loading your subscriptions..." />
-      ) : subs.length === 0 ? (
+      { subs.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No subscriptions tracked yet</p>

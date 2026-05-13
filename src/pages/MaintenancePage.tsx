@@ -110,6 +110,12 @@ export function MaintenancePage() {
 
   const overdueCount = tasks.filter((t) => !t.is_completed && new Date(t.due_date) < new Date()).length;
 
+  if (loading) {
+    return (
+      <Spinner text="Loading your maintenance tasks..." />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -274,9 +280,7 @@ export function MaintenancePage() {
       )}
 
       {/* Task List */}
-      {loading ? (
-        <Spinner text="Loading your maintenance tasks..." />
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Wrench className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No maintenance tasks yet</p>

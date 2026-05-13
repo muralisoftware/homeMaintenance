@@ -119,6 +119,12 @@ export function BillsPage() {
   const unpaidTotal = bills.filter((b) => !b.is_paid).reduce((s, b) => s + Number(b.amount), 0);
   const overdueCount = bills.filter((b) => !b.is_paid && new Date(b.due_date) < new Date()).length;
 
+  if (loading) {
+    return (
+      <Spinner text="Loading your bills..." />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
@@ -312,11 +318,7 @@ export function BillsPage() {
       )}
 
       {/* Bill List */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner text="Loading your bills..." />
-        </div>
-      ) : filtered.length === 0 ? (
+      { filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Bell className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No bills found. Add your first bill reminder!</p>

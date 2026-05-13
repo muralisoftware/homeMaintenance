@@ -112,6 +112,12 @@ export function ExpensesPage() {
     grouped[key].push(e);
   });
 
+  if (loading) {
+    return (
+      <Spinner text="Loading your expenses..." />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
@@ -236,9 +242,7 @@ export function ExpensesPage() {
       )}
 
       {/* Expense List */}
-      {loading ? (
-        <Spinner text="Loading your expenses..." />
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Receipt className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No expenses found. Start tracking your spending!</p>
