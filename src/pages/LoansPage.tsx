@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Plus, X, Landmark, Trash2, Loader2, IndianRupee, Calendar, TrendingDown,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 const LOAN_TYPES = [
   { value: 'home', label: 'Home Loan' },
@@ -361,9 +362,7 @@ export function LoansPage() {
 
       {/* Loan List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-        </div>
+        <Spinner  text="Loading your loans..." />
       ) : loans.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Landmark className="w-12 h-12 mx-auto mb-3 opacity-40" />

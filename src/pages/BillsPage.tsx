@@ -5,6 +5,7 @@ import {
   Plus, X, Bell, CheckCircle2, Clock, AlertTriangle,
   Trash2, Loader2, Calendar, IndianRupee, Repeat,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 const BILL_TYPES = [
   { value: 'electricity', label: 'Electricity' },
@@ -313,7 +314,7 @@ export function BillsPage() {
       {/* Bill List */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+          <Spinner text="Loading your bills..." />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">

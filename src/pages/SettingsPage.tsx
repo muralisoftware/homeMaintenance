@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Settings, User, Key, Copy, Check, Loader2 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -52,9 +53,7 @@ export function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-      </div>
+      <Spinner text="Loading your settings..." />
     );
   }
 

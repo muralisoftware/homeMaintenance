@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Wallet, Pencil, Trash2, Plus, X, Check, AlertCircle, TrendingUp, TrendingDown, IndianRupee,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 interface BudgetHistory {
   id: string;
@@ -161,13 +162,11 @@ export function MonthlyBudget() {
       })
     : null;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-600 border-t-transparent" />
-      </div>
-    );
-  }
+    if (loading) {
+        return (
+          <Spinner text="Loading your budget settings" />
+        );
+      }
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">

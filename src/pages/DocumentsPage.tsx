@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Plus, X, FolderLock, Trash2, Loader2, FileText, Calendar, AlertTriangle,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 const DOC_TYPES = [
   'eb_receipt', 'insurance', 'house_tax', 'id_proof', 'warranty',
@@ -233,9 +234,7 @@ export function DocumentsPage() {
 
       {/* Document Grid */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-        </div>
+        <Spinner  text="Loading your documents..." />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <FolderLock className="w-12 h-12 mx-auto mb-3 opacity-40" />

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Plus, X, CreditCard, Trash2, Loader2, Calendar, IndianRupee, Power, PowerOff,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 const SUB_CATEGORIES = [
   'entertainment', 'music', 'video', 'fitness', 'cloud', 'software', 'news', 'other',
@@ -227,9 +228,7 @@ export function SubscriptionsPage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-        </div>
+        <Spinner text="Loading your subscriptions..." />
       ) : subs.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-40" />

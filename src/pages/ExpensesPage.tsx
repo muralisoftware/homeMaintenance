@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Search, Filter, Trash2, CreditCard as Edit3, X, Loader2, Receipt, Calendar, IndianRupee } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 const CATEGORIES = [
   'grocery', 'food', 'medical', 'fuel', 'education',
@@ -236,9 +237,7 @@ export function ExpensesPage() {
 
       {/* Expense List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-        </div>
+        <Spinner text="Loading your expenses..." />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Receipt className="w-12 h-12 mx-auto mb-3 opacity-40" />

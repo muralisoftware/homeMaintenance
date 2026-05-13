@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Plus, X, Wrench, Trash2, Loader2, Calendar, CheckCircle2, Clock, AlertTriangle,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 const MAINT_CATEGORIES = [
   'ac_service', 'bike_service', 'car_service', 'water_tank', 'pest_control',
@@ -274,9 +275,7 @@ export function MaintenancePage() {
 
       {/* Task List */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-        </div>
+        <Spinner text="Loading your maintenance tasks..." />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <Wrench className="w-12 h-12 mx-auto mb-3 opacity-40" />

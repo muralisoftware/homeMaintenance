@@ -6,6 +6,7 @@ import {
   Landmark, AlertTriangle, CheckCircle2, Clock,
   ArrowUpRight, Download, FileSpreadsheet, FileText, Pencil, X, Check,
 } from 'lucide-react';
+import Spinner from '../components/spinner';
 
 interface ExpenseSummary {
   total: number;
@@ -440,9 +441,7 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-600 border-t-transparent" />
-      </div>
+      <Spinner text='Loading your dashboard...' />
     );
   }
 
