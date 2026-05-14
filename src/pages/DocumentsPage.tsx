@@ -92,11 +92,7 @@ export function DocumentsPage() {
     return days <= 30 && days >= 0;
   });
 
-  if (loading) {
-    return (
-      <Spinner text="Loading your documents..." />
-    );
-  }
+  if (loading) return <Spinner text="Loading your documents..." />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

@@ -119,11 +119,7 @@ export function BillsPage() {
   const unpaidTotal = bills.filter((b) => !b.is_paid).reduce((s, b) => s + Number(b.amount), 0);
   const overdueCount = bills.filter((b) => !b.is_paid && new Date(b.due_date) < new Date()).length;
 
-  if (loading) {
-    return (
-      <Spinner text="Loading your bills..." />
-    );
-  }
+  if (loading) return <Spinner text="Loading your bills..." />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

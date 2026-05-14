@@ -96,12 +96,8 @@ export function SubscriptionsPage() {
     return s + Number(sub.amount);
   }, 0);
 
-  if (loading) {
-    return (
-      <Spinner text="Loading your subscriptions..." />
-    );
-  }
-
+  if (loading) return <Spinner text="Loading your subscriptions..." />;
+  
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

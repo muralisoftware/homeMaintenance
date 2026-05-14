@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import {
-  Plus, X, Landmark, Trash2, Loader2, IndianRupee, Calendar, TrendingDown,
-} from 'lucide-react';
+import {Plus, X, Landmark, Trash2, IndianRupee, Calendar, TrendingDown,} from 'lucide-react';
 import Spinner from '../components/spinner';
 
 const LOAN_TYPES = [
@@ -141,11 +139,7 @@ export function LoansPage() {
 
   const loanPayments = selectedLoan ? payments.filter((p) => p.loan_id === selectedLoan) : [];
 
-  if (loading) {
-    return (
-      <Spinner text="Loading your loans..." />
-    );
-  }
+  if (loading) return <Spinner text="Loading your loans..." />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

@@ -142,11 +142,7 @@ export function FamilyPage() {
     loadFamilies();
   };
 
-  if (loading) {
-    return (
-      <Spinner text="Loading your families..." />
-    );
-  }
+  if (loading) return <Spinner text="Loading your families..." />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">

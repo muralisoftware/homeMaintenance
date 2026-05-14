@@ -439,12 +439,8 @@ export function Dashboard() {
   const handlePDFExport = () =>
     exportToPDF(expenseSummary, upcomingBills, subscriptions, loans, monthlyBudget);
 
-  if (loading) {
-    return (
-      <Spinner text='Loading your dashboard...' />
-    );
-  }
-
+  if (loading) return <Spinner text='Loading your dashboard...' />;
+  
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
 

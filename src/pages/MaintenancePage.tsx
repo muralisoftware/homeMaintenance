@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Plus, X, Wrench, Trash2, Loader2, Calendar, CheckCircle2, Clock, AlertTriangle,
+  Plus, X, Wrench, Trash2, Calendar, CheckCircle2, Clock, AlertTriangle,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
 
@@ -110,11 +110,7 @@ export function MaintenancePage() {
 
   const overdueCount = tasks.filter((t) => !t.is_completed && new Date(t.due_date) < new Date()).length;
 
-  if (loading) {
-    return (
-      <Spinner text="Loading your maintenance tasks..." />
-    );
-  }
+  if (loading) return <Spinner text="Loading your maintenance tasks..." />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
