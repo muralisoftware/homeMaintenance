@@ -33,7 +33,7 @@ const Spinner = ({ text = "Loading your Dashboard" }) => {
 
       {/* Loading Text */}
       <p className="mt-2 text-gray-500 text-sm animate-pulse">
-          Loading your data...
+          {text}
       </p>
     </div>
 )};
