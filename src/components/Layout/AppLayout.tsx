@@ -4,7 +4,7 @@ import { LayoutDashboard, Receipt, Bell, CreditCard, Landmark, Wrench, FolderLoc
   Wallet, } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-type Route = 'dashboard' | 'monthlyBudget' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'family' | 'settings';
+type Route = 'dashboard' | 'monthlyBudget' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'settings';
 
 const navItems: { id: Route; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,7 +15,6 @@ const navItems: { id: Route; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'loans', label: 'EMI & Loans', icon: Landmark },
   { id: 'maintenance', label: 'Maintenance', icon: Wrench },
   { id: 'documents', label: 'Digital Locker', icon: FolderLock },
-  { id: 'family', label: 'Family', icon: Users },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

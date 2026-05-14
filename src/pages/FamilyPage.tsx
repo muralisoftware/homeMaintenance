@@ -43,7 +43,7 @@ export function FamilyPage() {
   const loadFamilies = async () => {
     setLoading(true);
     const { data: memberData } = await supabase
-      .from('family_members')
+      .from('families')
       .select('family_id')
       .eq('user_id', user!.id);
 
@@ -63,7 +63,7 @@ export function FamilyPage() {
 
     // Load members for each family
     const { data: allMembers } = await supabase
-      .from('family_members')
+      .from('families')
       .select('*')
       .in('family_id', familyIds);
 
@@ -100,7 +100,7 @@ export function FamilyPage() {
       .single();
 
     if (family) {
-      await supabase.from('family_members').insert({
+      await supabase.from('families').insert({
         family_id: family.id,
         user_id: user!.id,
         role: 'admin',
@@ -117,7 +117,7 @@ export function FamilyPage() {
 
     // Find user by email in auth - we'll use profiles table
     const { data: profileData } = await supabase
-      .from('profiles')
+      .from('families')
       .select('id')
       .eq('id', inviteEmail)
       .maybeSingle();
@@ -125,7 +125,7 @@ export function FamilyPage() {
     // Since we can't look up by email directly, we'll add by user ID
     // In a real app, this would use an invite system
     if (profileData) {
-      await supabase.from('family_members').insert({
+      await supabase.from('families').insert({
         family_id: showInviteForm,
         user_id: profileData.id,
         role: 'member',
@@ -138,7 +138,7 @@ export function FamilyPage() {
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    await supabase.from('family_members').delete().eq('id', memberId);
+    await supabase.from('families').delete().eq('id', memberId);
     loadFamilies();
   };
 

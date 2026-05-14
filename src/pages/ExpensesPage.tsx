@@ -160,7 +160,7 @@ export function ExpensesPage() {
       </div>
 
       {/* Total */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 mt-4 mb-4 flex items-center justify-between">
         <span className="text-sm text-slate-500">Total ({filtered.length} expenses)</span>
         <span className="text-lg font-bold text-slate-900">₹{totalFiltered.toLocaleString('en-IN')}</span>
       </div>

@@ -87,7 +87,7 @@ export function LoansPage() {
     await supabase.from('loans').insert({
       user_id: user!.id,
       loan_type: form.loan_type,
-      lender_name: form.lender_name,
+      bank_name: form.lender_name,
       principal_amount: parseFloat(form.principal_amount) || 0,
       outstanding_balance: parseFloat(form.outstanding_balance) || 0,
       interest_rate: parseFloat(form.interest_rate) || 0,
