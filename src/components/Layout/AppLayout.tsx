@@ -139,6 +139,16 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           {children}
         </main>
+
+        <div style={{ borderTop: '1px solid rgba(20,184,166,0.1)', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <p style={{ margin: 0, fontSize: '13px', color: 'rgba(148,163,184,0.7)', fontFamily: "'Syne', sans-serif" }}>
+            © 2026 <span style={{ color: '#14b8a6', fontWeight: 700 }}>muralisoftware</span>. All rights reserved.
+          </p>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.5)', cursor: 'pointer' }}>Privacy</span>
+            <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.5)', cursor: 'pointer' }}>Terms</span>
+          </div>
+        </div>
       </div>
     </div>
   );
