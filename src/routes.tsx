@@ -11,8 +11,9 @@ import { MaintenancePage } from './pages/MaintenancePage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { MonthlyBudget } from './pages/MonthlyBudget';
+import { NotesPage } from './pages/NotesPage';
 
-type Route = 'dashboard' | 'monthlyBudget' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'settings';
+type Route = 'dashboard' | 'monthlyBudget' | 'expenses' | 'bills' | 'subscriptions' | 'loans' | 'maintenance' | 'documents' | 'notes' | 'settings';
 
 export const navigate = {
   to: (_route: Route) => {},
@@ -50,6 +51,7 @@ export function AppRoutes() {
     loans: <LoansPage />,
     maintenance: <MaintenancePage />,
     documents: <DocumentsPage />,
+    notes: <NotesPage />,
     settings: <SettingsPage />,
   };
 
