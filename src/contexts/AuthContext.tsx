@@ -35,13 +35,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const getRedirectUrl = () => {
+    const envUrl = import.meta.env.VITE_SITE_URL;
+    if (envUrl) return envUrl;
+    return window.location.origin;
+  };
+
   const signUp = async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: { 
         data: { full_name: fullName },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getRedirectUrl(),
       },
     });
     if (error) return { error: error.message };
@@ -69,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: getRedirectUrl(),
       },
     });
     return { error: error?.message ?? null };
