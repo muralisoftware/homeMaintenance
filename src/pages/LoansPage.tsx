@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import {Plus, X, Landmark, Trash2, IndianRupee, Calendar, TrendingDown,} from 'lucide-react';
+import {Plus, X, Landmark, Trash2, IndianRupee, Calendar, TrendingDown, Edit2, Download, FileSpreadsheet,} from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 const LOAN_TYPES = [
   { value: 'home', label: 'Home Loan' },
@@ -48,6 +49,7 @@ export function LoansPage() {
   const [payments, setPayments] = useState<LoanPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState<string | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -84,7 +86,7 @@ export function LoansPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from('loans').insert({
+    const loanData = {
       user_id: user!.id,
       loan_type: form.loan_type,
       bank_name: form.lender_name,
@@ -95,7 +97,15 @@ export function LoansPage() {
       emi_due_date: form.emi_due_date,
       tenure_months: parseInt(form.tenure_months) || 0,
       start_date: form.start_date,
-    });
+    };
+
+    if (editingId) {
+      await supabase.from('loans').update(loanData).eq('id', editingId);
+      setEditingId(null);
+    } else {
+      await supabase.from('loans').insert(loanData);
+    }
+
     setForm({
       loan_type: 'personal', lender_name: '', principal_amount: '',
       outstanding_balance: '', interest_rate: '', emi_amount: '',
@@ -103,6 +113,52 @@ export function LoansPage() {
     });
     setShowForm(false);
     loadLoans();
+  };
+
+  const handleEdit = (loan: Loan) => {
+    setForm({
+      loan_type: loan.loan_type,
+      lender_name: (loan as any).bank_name || '', // bank_name in DB
+      principal_amount: loan.principal_amount.toString(),
+      outstanding_balance: loan.outstanding_balance.toString(),
+      interest_rate: loan.interest_rate.toString(),
+      emi_amount: loan.emi_amount.toString(),
+      emi_due_date: loan.emi_due_date || '',
+      tenure_months: loan.tenure_months.toString(),
+      start_date: loan.start_date,
+    });
+    setEditingId(loan.id);
+    setShowForm(true);
+  };
+
+  const handleExportPDF = () => {
+    const headers = [['Type', 'Lender', 'Principal', 'Outstanding', 'EMI', 'Progress']];
+    const data = loans.map((l) => {
+      const progress = l.principal_amount > 0
+        ? Math.round(((Number(l.principal_amount) - Number(l.outstanding_balance)) / Number(l.principal_amount)) * 100)
+        : 0;
+      return [
+        LOAN_TYPES.find((t) => t.value === l.loan_type)?.label || l.loan_type,
+        (l as any).bank_name || '-',
+        l.principal_amount.toLocaleString('en-IN'),
+        l.outstanding_balance.toLocaleString('en-IN'),
+        l.emi_amount.toLocaleString('en-IN'),
+        `${progress}%`,
+      ];
+    });
+    exportToPDF('Loans Report', headers, data, 'loans_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = loans.map((l) => ({
+      Type: LOAN_TYPES.find((t) => t.value === l.loan_type)?.label || l.loan_type,
+      Lender: (l as any).bank_name,
+      Principal: l.principal_amount,
+      Outstanding: l.outstanding_balance,
+      EMI: l.emi_amount,
+      StartDate: l.start_date,
+    }));
+    exportToExcel(data, 'loans_report');
   };
 
   const handlePayment = async (e: React.FormEvent) => {
@@ -148,13 +204,34 @@ export function LoansPage() {
           <h2 className="text-2xl font-bold text-slate-900">EMI & Loans</h2>
           <p className="text-sm text-slate-500 mt-0.5">Track your loans and EMI payments</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Loan
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={handleExportPDF}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4 text-rose-500" />
+              PDF
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              onClick={handleExportExcel}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Excel
+            </button>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm({ loan_type: 'personal', lender_name: '', principal_amount: '', outstanding_balance: '', interest_rate: '', emi_amount: '', emi_due_date: '', tenure_months: '', start_date: new Date().toISOString().split('T')[0] }); }}
+            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Loan
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -178,7 +255,7 @@ export function LoansPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
-              <h3 className="text-lg font-semibold text-slate-900">Add Loan</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{editingId ? 'Edit Loan' : 'Add Loan'}</h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -296,7 +373,7 @@ export function LoansPage() {
                 type="submit"
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Add Loan
+                {editingId ? 'Update Loan' : 'Add Loan'}
               </button>
             </form>
           </div>
@@ -306,7 +383,7 @@ export function LoansPage() {
       {/* Payment Modal */}
       {showPaymentForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowPaymentForm(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-full max-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-lg font-semibold text-slate-900">Record EMI Payment</h3>
               <button onClick={() => setShowPaymentForm(null)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
@@ -386,9 +463,16 @@ export function LoansPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-base font-semibold text-slate-900">{typeLabel}</p>
-                          <p className="text-xs text-slate-500">{loan.lender_name || 'No lender'} · EMI due: {loan.emi_due_date || 'Not set'}</p>
+                          <p className="text-xs text-slate-500">{(loan as any).bank_name || 'No lender'} · EMI due: {loan.emi_due_date || 'Not set'}</p>
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEdit(loan)}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-teal-600 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => setShowPaymentForm(loan.id)}
                             className="text-xs font-medium bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors"
@@ -398,6 +482,7 @@ export function LoansPage() {
                           <button
                             onClick={() => handleDelete(loan.id)}
                             className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
+                            title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

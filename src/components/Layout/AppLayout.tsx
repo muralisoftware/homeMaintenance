@@ -14,7 +14,7 @@ const navItems: { id: Route; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
   { id: 'loans', label: 'EMI & Loans', icon: Landmark },
   { id: 'maintenance', label: 'Maintenance', icon: Wrench },
-  { id: 'documents', label: 'Digital Locker', icon: FolderLock },
+  { id: 'documents', label: 'Document Manager', icon: FolderLock },
   { id: 'notes', label: 'Notes', icon:  Notebook },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];

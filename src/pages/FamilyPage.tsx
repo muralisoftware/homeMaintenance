@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, Plus, X, Loader2, Shield, CircleUser as UserCircle, Trash2, Crown } from 'lucide-react';
+import { Users, Plus, X, Loader2, Shield, CircleUser as UserCircle, Trash2, Crown, Edit2, Download, FileSpreadsheet } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 interface Family {
   id: string;
@@ -32,6 +33,7 @@ export function FamilyPage() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingFamilyId, setEditingFamilyId] = useState<string | null>(null);
   const [showInviteForm, setShowInviteForm] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [familyName, setFamilyName] = useState('');
@@ -93,37 +95,67 @@ export function FamilyPage() {
 
   const handleCreateFamily = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data: family } = await supabase
-      .from('families')
-      .insert({ name: familyName, created_by: user!.id })
-      .select()
-      .single();
+    if (editingFamilyId) {
+      await supabase.from('families').update({ name: familyName }).eq('id', editingFamilyId);
+      setEditingFamilyId(null);
+    } else {
+      const { data: family } = await supabase
+        .from('families')
+        .insert({ name: familyName, created_by: user!.id })
+        .select()
+        .single();
 
-    if (family) {
-      await supabase.from('families').insert({
-        family_id: family.id,
-        user_id: user!.id,
-        role: 'admin',
-      });
+      if (family) {
+        await supabase.from('families').insert({
+          family_id: family.id,
+          user_id: user!.id,
+          role: 'admin',
+        });
+      }
     }
     setFamilyName('');
     setShowForm(false);
     loadFamilies();
   };
 
+  const handleEditFamily = (family: Family) => {
+    setFamilyName(family.name);
+    setEditingFamilyId(family.id);
+    setShowForm(true);
+  };
+
+  const handleExportPDF = (family: Family) => {
+    const familyMembers = members[family.id] || [];
+    const headers = [['Name', 'Role', 'Joined Date']];
+    const data = familyMembers.map((m) => [
+      profiles[m.user_id]?.full_name || 'Unknown',
+      m.role,
+      new Date(m.created_at).toLocaleDateString('en-IN'),
+    ]);
+    exportToPDF(`${family.name} Members`, headers, data, `${family.name.toLowerCase()}_members`);
+  };
+
+  const handleExportExcel = (family: Family) => {
+    const familyMembers = members[family.id] || [];
+    const data = familyMembers.map((m) => ({
+      Name: profiles[m.user_id]?.full_name || 'Unknown',
+      Role: m.role,
+      JoinedDate: m.created_at,
+    }));
+    exportToExcel(data, `${family.name.toLowerCase()}_members`);
+  };
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showInviteForm) return;
 
-    // Find user by email in auth - we'll use profiles table
+    // Find user by ID in profiles (assuming inviteEmail is user ID as per original code)
     const { data: profileData } = await supabase
-      .from('families')
+      .from('profiles')
       .select('id')
       .eq('id', inviteEmail)
       .maybeSingle();
 
-    // Since we can't look up by email directly, we'll add by user ID
-    // In a real app, this would use an invite system
     if (profileData) {
       await supabase.from('families').insert({
         family_id: showInviteForm,
@@ -152,7 +184,7 @@ export function FamilyPage() {
           <p className="text-sm text-slate-500 mt-0.5">Manage family groups and shared access</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => { setShowForm(true); setEditingFamilyId(null); setFamilyName(''); }}
           className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -160,12 +192,12 @@ export function FamilyPage() {
         </button>
       </div>
 
-      {/* Create Family Modal */}
+      {/* Create/Edit Family Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="text-lg font-semibold text-slate-900">Create Family Group</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{editingFamilyId ? 'Edit Family Group' : 'Create Family Group'}</h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -186,7 +218,7 @@ export function FamilyPage() {
                 type="submit"
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Create Family
+                {editingFamilyId ? 'Update Family' : 'Create Family'}
               </button>
             </form>
           </div>
@@ -240,7 +272,7 @@ export function FamilyPage() {
             const isAdmin = familyMembers.some((m) => m.user_id === user!.id && m.role === 'admin');
 
             return (
-              <div key={family.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+              <div key={family.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -248,19 +280,45 @@ export function FamilyPage() {
                         <Users className="w-6 h-6 text-teal-600" />
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold text-slate-900">{family.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-semibold text-slate-900">{family.name}</h3>
+                          {isAdmin && (
+                            <button onClick={() => handleEditFamily(family)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-teal-600 transition-colors">
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-500">{familyMembers.length} member(s)</p>
                       </div>
                     </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => setShowInviteForm(family.id)}
-                        className="text-xs font-medium bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add Member
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+                        <button
+                          onClick={() => handleExportPDF(family)}
+                          className="p-1.5 hover:bg-slate-50 text-slate-400 transition-colors rounded flex items-center gap-1 text-[10px] font-medium"
+                          title="Download PDF"
+                        >
+                          <Download className="w-3 h-3 text-rose-500" />
+                        </button>
+                        <div className="w-px h-3 bg-slate-200 mx-0.5" />
+                        <button
+                          onClick={() => handleExportExcel(family)}
+                          className="p-1.5 hover:bg-slate-50 text-slate-400 transition-colors rounded flex items-center gap-1 text-[10px] font-medium"
+                          title="Download Excel"
+                        >
+                          <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
+                        </button>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => setShowInviteForm(family.id)}
+                          className="text-xs font-medium bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add Member
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -274,9 +332,9 @@ export function FamilyPage() {
                       return (
                         <div
                           key={member.id}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-slate-50"
+                          className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/50"
                         >
-                          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm">
                             {isMemberAdmin ? (
                               <Crown className="w-5 h-5 text-amber-500" />
                             ) : (

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Filter, Trash2, CreditCard as Edit3, X, Loader2, Receipt, Calendar, IndianRupee } from 'lucide-react';
+import { Plus, Search, Filter, Trash2, CreditCard as Edit3, X, Loader2, Receipt, Calendar, IndianRupee, Download, FileSpreadsheet } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 const CATEGORIES = [
   'grocery', 'food', 'medical', 'fuel', 'education',
@@ -96,6 +97,27 @@ export function ExpensesPage() {
     loadExpenses();
   };
 
+  const handleExportPDF = () => {
+    const headers = [['Date', 'Category', 'Description', 'Amount (₹)']];
+    const data = filtered.map((e) => [
+      new Date(e.expense_date).toLocaleDateString('en-IN'),
+      e.category,
+      e.description || '-',
+      e.amount.toLocaleString('en-IN'),
+    ]);
+    exportToPDF('Expense Report', headers, data, 'expenses_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = filtered.map((e) => ({
+      Date: e.expense_date,
+      Category: e.category,
+      Description: e.description,
+      Amount: e.amount,
+    }));
+    exportToExcel(data, 'expenses_report');
+  };
+
   const filtered = expenses.filter((e) => {
     const matchSearch = !search || e.description.toLowerCase().includes(search.toLowerCase()) || e.category.toLowerCase().includes(search.toLowerCase());
     const matchCategory = !filterCategory || e.category === filterCategory;
@@ -115,21 +137,41 @@ export function ExpensesPage() {
   if (loading) return <Spinner text="Loading your expenses..." />;
 
   return (
-    <div className="space-{
-    y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Expenses</h2>
           <p className="text-sm text-slate-500 mt-0.5">Track your daily spending</p>
         </div>
-        <button
-          onClick={() => { setShowForm(true); setEditingId(null); setForm({ amount: '', category: 'grocery', description: '', expense_date: new Date().toISOString().split('T')[0] }); }}
-          className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Expense
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={handleExportPDF}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4 text-rose-500" />
+              PDF
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              onClick={handleExportExcel}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Excel
+            </button>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm({ amount: '', category: 'grocery', description: '', expense_date: new Date().toISOString().split('T')[0] }); }}
+            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter */}

@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Plus, X, Wrench, Trash2, Calendar, CheckCircle2, Clock, AlertTriangle,
+  Plus, X, Wrench, Trash2, Calendar, CheckCircle2, Clock, AlertTriangle, Edit2, Download, FileSpreadsheet,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 const MAINT_CATEGORIES = [
   'ac_service', 'bike_service', 'car_service', 'water_tank', 'pest_control',
@@ -41,6 +42,7 @@ export function MaintenancePage() {
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [form, setForm] = useState({
     task_name: '',
@@ -68,7 +70,7 @@ export function MaintenancePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from('maintenance_tasks').insert({
+    const taskData = {
       user_id: user!.id,
       task_name: form.task_name,
       category: form.category,
@@ -76,13 +78,57 @@ export function MaintenancePage() {
       is_recurring: form.is_recurring,
       recurring_frequency: form.is_recurring ? `every ${form.recurring_frequency} months` : '',
       notes: form.notes,
-    });
+    };
+
+    if (editingId) {
+      await supabase.from('maintenance_tasks').update(taskData).eq('id', editingId);
+      setEditingId(null);
+    } else {
+      await supabase.from('maintenance_tasks').insert(taskData);
+    }
+
     setForm({
       task_name: '', category: 'ac_service', due_date: new Date().toISOString().split('T')[0],
       is_recurring: false, recurring_frequency: '6', notes: '',
     });
     setShowForm(false);
     loadTasks();
+  };
+
+  const handleEdit = (task: MaintenanceTask) => {
+    setForm({
+      task_name: task.task_name,
+      category: task.category,
+      due_date: task.due_date,
+      is_recurring: task.is_recurring,
+      recurring_frequency: task.recurring_frequency ? task.recurring_frequency.replace(/[^0-9]/g, '') : '6',
+      notes: task.notes || '',
+    });
+    setEditingId(task.id);
+    setShowForm(true);
+  };
+
+  const handleExportPDF = () => {
+    const headers = [['Due Date', 'Task', 'Category', 'Status', 'Notes']];
+    const data = filtered.map((t) => [
+      new Date(t.due_date).toLocaleDateString('en-IN'),
+      t.task_name,
+      maintLabels[t.category] || t.category,
+      t.is_completed ? 'Completed' : 'Pending',
+      t.notes || '-',
+    ]);
+    exportToPDF('Maintenance Tasks Report', headers, data, 'maintenance_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = filtered.map((t) => ({
+      DueDate: t.due_date,
+      Task: t.task_name,
+      Category: maintLabels[t.category] || t.category,
+      Status: t.is_completed ? 'Completed' : 'Pending',
+      Notes: t.notes,
+    }));
+    exportToExcel(data, 'maintenance_report');
   };
 
   const toggleComplete = async (task: MaintenanceTask) => {
@@ -119,13 +165,34 @@ export function MaintenancePage() {
           <h2 className="text-2xl font-bold text-slate-900">Home Maintenance</h2>
           <p className="text-sm text-slate-500 mt-0.5">Keep your home running smoothly</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Task
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={handleExportPDF}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4 text-rose-500" />
+              PDF
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              onClick={handleExportExcel}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Excel
+            </button>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm({ task_name: '', category: 'ac_service', due_date: new Date().toISOString().split('T')[0], is_recurring: false, recurring_frequency: '6', notes: '' }); }}
+            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Task
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -187,7 +254,7 @@ export function MaintenancePage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="text-lg font-semibold text-slate-900">Add Maintenance Task</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{editingId ? 'Edit Maintenance Task' : 'Add Maintenance Task'}</h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -268,7 +335,7 @@ export function MaintenancePage() {
                 type="submit"
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Add Task
+                {editingId ? 'Update Task' : 'Add Task'}
               </button>
             </form>
           </div>
@@ -332,12 +399,22 @@ export function MaintenancePage() {
                     {task.is_recurring && <span className="ml-1 text-teal-500">· Recurring</span>}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleEdit(task)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-teal-600 transition-colors"
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(task.id)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             );
           })}

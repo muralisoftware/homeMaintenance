@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Plus, X, Bell, CheckCircle2, Clock, AlertTriangle,
-  Trash2, Loader2, Calendar, IndianRupee, Repeat,
+  Trash2, Loader2, Calendar, IndianRupee, Repeat, Edit2, Download, FileSpreadsheet,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 const BILL_TYPES = [
   { value: 'electricity', label: 'Electricity' },
@@ -43,6 +44,7 @@ export function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [form, setForm] = useState({
     bill_type: 'electricity',
@@ -72,7 +74,7 @@ export function BillsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from('bills').insert({
+    const billData = {
       user_id: user!.id,
       bill_type: form.bill_type,
       provider: form.provider,
@@ -82,7 +84,15 @@ export function BillsPage() {
       // recurring_frequency: form.is_recurring ? form.recurring_frequency : '',
       reminder_days: parseInt(form.reminder_days_before) || 3,
       notes: form.notes,
-    });
+    };
+
+    if (editingId) {
+      await supabase.from('bills').update(billData).eq('id', editingId);
+      setEditingId(null);
+    } else {
+      await supabase.from('bills').insert(billData);
+    }
+
     setForm({
       bill_type: 'electricity', provider: '', amount: '',
       due_date: new Date().toISOString().split('T')[0],
@@ -91,6 +101,44 @@ export function BillsPage() {
     });
     setShowForm(false);
     loadBills();
+  };
+
+  const handleEdit = (bill: Bill) => {
+    setForm({
+      bill_type: bill.bill_type,
+      provider: bill.provider || '',
+      amount: bill.amount.toString(),
+      due_date: bill.due_date,
+      is_recurring: bill.is_recurring || false,
+      recurring_frequency: bill.recurring_frequency || 'monthly',
+      reminder_days_before: (bill.reminder_days_before || 3).toString(),
+      notes: bill.notes || '',
+    });
+    setEditingId(bill.id);
+    setShowForm(true);
+  };
+
+  const handleExportPDF = () => {
+    const headers = [['Due Date', 'Type', 'Provider', 'Amount (₹)', 'Status']];
+    const data = filtered.map((b) => [
+      new Date(b.due_date).toLocaleDateString('en-IN'),
+      BILL_TYPES.find((t) => t.value === b.bill_type)?.label || b.bill_type,
+      b.provider || '-',
+      b.amount.toLocaleString('en-IN'),
+      b.is_paid ? 'Paid' : 'Unpaid',
+    ]);
+    exportToPDF('Bill Reminders Report', headers, data, 'bills_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = filtered.map((b) => ({
+      DueDate: b.due_date,
+      Type: BILL_TYPES.find((t) => t.value === b.bill_type)?.label || b.bill_type,
+      Provider: b.provider,
+      Amount: b.amount,
+      Status: b.is_paid ? 'Paid' : 'Unpaid',
+    }));
+    exportToExcel(data, 'bills_report');
   };
 
   const togglePaid = async (bill: Bill) => {
@@ -129,13 +177,34 @@ export function BillsPage() {
           <h2 className="text-2xl font-bold text-slate-900">Bill Reminders</h2>
           <p className="text-sm text-slate-500 mt-0.5">Never miss a payment deadline</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Bill
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={handleExportPDF}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4 text-rose-500" />
+              PDF
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              onClick={handleExportExcel}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Excel
+            </button>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm({ bill_type: 'electricity', provider: '', amount: '', due_date: new Date().toISOString().split('T')[0], is_recurring: false, recurring_frequency: 'monthly', reminder_days_before: '3', notes: '' }); }}
+            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Bill
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -197,7 +266,7 @@ export function BillsPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
-              <h3 className="text-lg font-semibold text-slate-900">Add Bill Reminder</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{editingId ? 'Edit Bill Reminder' : 'Add Bill Reminder'}</h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -306,7 +375,7 @@ export function BillsPage() {
                 type="submit"
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Add Bill Reminder
+                {editingId ? 'Update Bill Reminder' : 'Add Bill Reminder'}
               </button>
             </form>
           </div>
@@ -377,12 +446,20 @@ export function BillsPage() {
                 <p className={`text-sm font-semibold ${bill.is_paid ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
                   ₹{Number(bill.amount).toLocaleString('en-IN')}
                 </p>
-                <button
-                  onClick={() => handleDelete(bill.id)}
-                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleEdit(bill)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-teal-600 transition-colors"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(bill.id)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             );
           })}

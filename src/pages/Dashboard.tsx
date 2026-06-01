@@ -7,6 +7,9 @@ import {
   ArrowUpRight, Download, FileSpreadsheet, FileText, Pencil, X, Check,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface ExpenseSummary {
   total: number;
@@ -66,232 +69,115 @@ const billTypeLabels: Record<string, string> = {
 };
 
 // ─── Excel Export ──────────────────────────────────────────────────────────────
-function exportToExcel(
+function handleExportExcel(
   expenseSummary: ExpenseSummary,
   upcomingBills: BillItem[],
   subscriptions: SubscriptionItem[],
   loans: LoanItem[],
   monthlyBudget: number
 ) {
-  const now = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long' });
-  const rows: string[] = [];
+  const wb = XLSX.utils.book_new();
 
-  rows.push(`Finance Dashboard Export - ${now}`);
-  rows.push('');
-  rows.push('SUMMARY');
-  rows.push('Metric,Value');
-  rows.push(`Monthly Budget,₹${monthlyBudget.toLocaleString('en-IN')}`);
-  rows.push(`Total Expenses,₹${expenseSummary.total.toLocaleString('en-IN')}`);
-  const savings = monthlyBudget - expenseSummary.total;
-  rows.push(`Savings,₹${Math.abs(savings).toLocaleString('en-IN')} ${savings < 0 ? '(Over Budget)' : ''}`);
-  rows.push(`Active Subscriptions,${subscriptions.length}`);
-  rows.push(`Active Loans,${loans.length}`);
-  rows.push(`Upcoming Unpaid Bills,${upcomingBills.filter(b => !b.is_paid).length}`);
-  rows.push('');
+  // Summary Sheet
+  const summaryData = [
+    ['Finance Dashboard Summary'],
+    ['Generated on', new Date().toLocaleString('en-IN')],
+    [],
+    ['Metric', 'Value'],
+    ['Monthly Budget', monthlyBudget],
+    ['Total Expenses', expenseSummary.total],
+    ['Savings', monthlyBudget - expenseSummary.total],
+    ['Active Subscriptions', subscriptions.length],
+    ['Active Loans', loans.length],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-  rows.push('EXPENSE BREAKDOWN');
-  rows.push('Category,Amount (₹),% of Total');
-  expenseSummary.byCategory.forEach(cat => {
-    const pct = expenseSummary.total > 0 ? ((cat.total / expenseSummary.total) * 100).toFixed(1) : '0.0';
-    rows.push(`${cat.category},${cat.total},${pct}%`);
-  });
-  rows.push('');
+  // Expenses Sheet
+  const expensesData = expenseSummary.byCategory.map(c => ({
+    Category: c.category,
+    Amount: c.total,
+    Percentage: expenseSummary.total > 0 ? ((c.total / expenseSummary.total) * 100).toFixed(1) + '%' : '0%'
+  }));
+  const wsExpenses = XLSX.utils.json_to_sheet(expensesData);
+  XLSX.utils.book_append_sheet(wb, wsExpenses, 'Expenses');
 
-  rows.push('UPCOMING BILLS');
-  rows.push('Bill Type,Provider,Amount (₹),Due Date,Status');
-  upcomingBills.forEach(bill => {
-    const daysLeft = Math.ceil((new Date(bill.due_date).getTime() - Date.now()) / 86400000);
-    const status = bill.is_paid ? 'Paid' : daysLeft <= 0 ? 'Overdue' : `Due in ${daysLeft}d`;
-    rows.push(`${billTypeLabels[bill.bill_type] || bill.bill_type},${bill.provider || 'N/A'},${bill.amount},${new Date(bill.due_date).toLocaleDateString('en-IN')},${status}`);
-  });
-  rows.push('');
+  // Bills Sheet
+  const billsData = upcomingBills.map(b => ({
+    Type: billTypeLabels[b.bill_type] || b.bill_type,
+    Provider: b.provider || '-',
+    Amount: b.amount,
+    DueDate: b.due_date,
+    Paid: b.is_paid ? 'Yes' : 'No'
+  }));
+  const wsBills = XLSX.utils.json_to_sheet(billsData);
+  XLSX.utils.book_append_sheet(wb, wsBills, 'Bills');
 
-  rows.push('ACTIVE SUBSCRIPTIONS');
-  rows.push('Name,Amount (₹),Billing Cycle,Next Billing Date');
-  subscriptions.forEach(sub => {
-    rows.push(`${sub.name},${sub.amount},${sub.billing_cycle},${new Date(sub.next_billing_date).toLocaleDateString('en-IN')}`);
-  });
-  rows.push('');
-
-  rows.push('ACTIVE LOANS');
-  rows.push('Loan Type,Outstanding Balance (₹),EMI Amount (₹),EMI Due Date');
-  loans.forEach(loan => {
-    rows.push(`${loan.loan_type} Loan,${loan.outstanding_balance},${loan.emi_amount},${new Date(loan.emi_due_date).toLocaleDateString('en-IN')}`);
-  });
-
-  const csvContent = rows.join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `finance-dashboard-${now.replace(/\s/g, '-')}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  XLSX.writeFile(wb, `finance_dashboard_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 // ─── PDF Export ────────────────────────────────────────────────────────────────
-async function exportToPDF(
+function handleExportPDF(
   expenseSummary: ExpenseSummary,
   upcomingBills: BillItem[],
   subscriptions: SubscriptionItem[],
   loans: LoanItem[],
   monthlyBudget: number
 ) {
-  const { default: jsPDF } = await import('jspdf');
-  const { default: html2canvas } = await import('html2canvas');
+  const doc = new jsPDF();
+  const now = new Date().toLocaleString('en-IN');
+  
+  doc.setFontSize(20);
+  doc.text('Finance Dashboard Report', 14, 20);
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Generated on: ${now}`, 14, 28);
 
-  const now = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long' });
-  const savings = monthlyBudget - expenseSummary.total;
-  const totalEMI = loans.reduce((s, l) => s + Number(l.emi_amount), 0);
-  const totalSubs = subscriptions.reduce((s, sub) => s + Number(sub.amount), 0);
+  // Summary Section
+  doc.setFontSize(14);
+  doc.setTextColor(0);
+  doc.text('Summary', 14, 40);
+  
+  autoTable(doc, {
+    startY: 45,
+    head: [['Metric', 'Value']],
+    body: [
+      ['Monthly Budget', `₹${monthlyBudget.toLocaleString('en-IN')}`],
+      ['Total Expenses', `₹${expenseSummary.total.toLocaleString('en-IN')}`],
+      ['Savings', `₹${(monthlyBudget - expenseSummary.total).toLocaleString('en-IN')}`],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: [13, 148, 136] }
+  });
 
-  const tableStyle = `border-collapse:collapse;width:100%;margin-bottom:20px;font-size:12px;font-family:'Segoe UI',sans-serif;`;
-  const thStyle = `background:#0f172a;color:#fff;padding:8px 12px;text-align:left;`;
-  const tdStyle = `padding:7px 12px;border-bottom:1px solid #e2e8f0;`;
-  const tdAltStyle = `padding:7px 12px;border-bottom:1px solid #e2e8f0;background:#f8fafc;`;
+  // Expenses Section
+  doc.text('Expense Breakdown', 14, (doc as any).lastAutoTable.finalY + 15);
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 20,
+    head: [['Category', 'Amount (₹)', 'Percentage']],
+    body: expenseSummary.byCategory.map(c => [
+      c.category.charAt(0).toUpperCase() + c.category.slice(1),
+      c.total.toLocaleString('en-IN'),
+      expenseSummary.total > 0 ? ((c.total / expenseSummary.total) * 100).toFixed(1) + '%' : '0%'
+    ]),
+    headStyles: { fillColor: [13, 148, 136] }
+  });
 
-  const categoryRows = expenseSummary.byCategory.map((cat, i) => {
-    const pct = expenseSummary.total > 0 ? ((cat.total / expenseSummary.total) * 100).toFixed(1) : '0.0';
-    const color = categoryColors[cat.category] || '#94a3b8';
-    const td = i % 2 === 0 ? tdStyle : tdAltStyle;
-    return `<tr>
-      <td style="${td}"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle;"></span>${cat.category}</td>
-      <td style="${td}">₹${cat.total.toLocaleString('en-IN')}</td>
-      <td style="${td}">${pct}%</td>
-    </tr>`;
-  }).join('');
+  // Bills Section
+  doc.text('Upcoming Bills', 14, (doc as any).lastAutoTable.finalY + 15);
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 20,
+    head: [['Bill Type', 'Provider', 'Amount (₹)', 'Due Date']],
+    body: upcomingBills.map(b => [
+      billTypeLabels[b.bill_type] || b.bill_type,
+      b.provider || '-',
+      b.amount.toLocaleString('en-IN'),
+      new Date(b.due_date).toLocaleDateString('en-IN')
+    ]),
+    headStyles: { fillColor: [13, 148, 136] }
+  });
 
-  const billRows = upcomingBills.map((bill, i) => {
-    const daysLeft = Math.ceil((new Date(bill.due_date).getTime() - Date.now()) / 86400000);
-    const status = bill.is_paid ? 'Paid' : daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`;
-    const statusColor = bill.is_paid ? '#16a34a' : daysLeft <= 3 ? '#dc2626' : '#64748b';
-    const td = i % 2 === 0 ? tdStyle : tdAltStyle;
-    return `<tr>
-      <td style="${td}">${billTypeLabels[bill.bill_type] || bill.bill_type}</td>
-      <td style="${td}">${bill.provider || '—'}</td>
-      <td style="${td}">₹${Number(bill.amount).toLocaleString('en-IN')}</td>
-      <td style="${td}">${new Date(bill.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-      <td style="${td};color:${statusColor};font-weight:600;">${status}</td>
-    </tr>`;
-  }).join('');
-
-  const subRows = subscriptions.map((sub, i) => {
-    const td = i % 2 === 0 ? tdStyle : tdAltStyle;
-    return `<tr>
-      <td style="${td}">${sub.name}</td>
-      <td style="${td}">₹${Number(sub.amount).toLocaleString('en-IN')}</td>
-      <td style="${td};text-transform:capitalize;">${sub.billing_cycle}</td>
-      <td style="${td}">${new Date(sub.next_billing_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-    </tr>`;
-  }).join('');
-
-  const loanRows = loans.map((loan, i) => {
-    const td = i % 2 === 0 ? tdStyle : tdAltStyle;
-    return `<tr>
-      <td style="${td};text-transform:capitalize;">${loan.loan_type} Loan</td>
-      <td style="${td}">₹${Number(loan.outstanding_balance).toLocaleString('en-IN')}</td>
-      <td style="${td}">₹${Number(loan.emi_amount).toLocaleString('en-IN')}</td>
-      <td style="${td}">${new Date(loan.emi_due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-    </tr>`;
-  }).join('');
-
-  const html = `
-    <div id="pdf-content" style="width:794px;padding:40px;background:#fff;font-family:'Segoe UI',sans-serif;color:#1e293b;">
-      <h1 style="font-size:24px;font-weight:700;color:#0f172a;margin:0 0 4px;">Finance Dashboard</h1>
-      <p style="color:#64748b;font-size:13px;margin:0 0 32px;">
-        ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-      </p>
-
-      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Summary</h2>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
-        ${[
-          ['Monthly Budget', `₹${monthlyBudget.toLocaleString('en-IN')}`],
-          ['Total Expenses', `₹${expenseSummary.total.toLocaleString('en-IN')}`],
-          ['Savings', `${savings >= 0 ? '+' : '-'}₹${Math.abs(savings).toLocaleString('en-IN')}`],
-          ['Subscriptions / mo', `₹${totalSubs.toLocaleString('en-IN')}`],
-          ['EMI / mo', `₹${totalEMI.toLocaleString('en-IN')}`],
-          ['Unpaid Bills', `${upcomingBills.filter(b => !b.is_paid).length}`],
-        ].map(([label, val]) => `
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;">
-            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;font-weight:600;margin-bottom:4px;">${label}</div>
-            <div style="font-size:20px;font-weight:700;color:#0f172a;">${val}</div>
-          </div>
-        `).join('')}
-      </div>
-
-      ${expenseSummary.byCategory.length > 0 ? `
-      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Expense Breakdown</h2>
-      <table style="${tableStyle}">
-        <thead><tr><th style="${thStyle}">Category</th><th style="${thStyle}">Amount</th><th style="${thStyle}">% of Total</th></tr></thead>
-        <tbody>${categoryRows}</tbody>
-      </table>` : ''}
-
-      ${upcomingBills.length > 0 ? `
-      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Upcoming Bills</h2>
-      <table style="${tableStyle}">
-        <thead><tr><th style="${thStyle}">Bill Type</th><th style="${thStyle}">Provider</th><th style="${thStyle}">Amount</th><th style="${thStyle}">Due Date</th><th style="${thStyle}">Status</th></tr></thead>
-        <tbody>${billRows}</tbody>
-      </table>` : ''}
-
-      ${subscriptions.length > 0 ? `
-      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Active Subscriptions</h2>
-      <table style="${tableStyle}">
-        <thead><tr><th style="${thStyle}">Name</th><th style="${thStyle}">Amount</th><th style="${thStyle}">Billing Cycle</th><th style="${thStyle}">Next Date</th></tr></thead>
-        <tbody>${subRows}</tbody>
-      </table>` : ''}
-
-      ${loans.length > 0 ? `
-      <h2 style="font-size:15px;font-weight:600;color:#0f172a;margin:0 0 10px;border-left:4px solid #0d9488;padding-left:10px;">Active Loans</h2>
-      <table style="${tableStyle}">
-        <thead><tr><th style="${thStyle}">Loan Type</th><th style="${thStyle}">Outstanding Balance</th><th style="${thStyle}">EMI Amount</th><th style="${thStyle}">EMI Due Date</th></tr></thead>
-        <tbody>${loanRows}</tbody>
-      </table>` : ''}
-
-      <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
-        Generated by Finance Dashboard · ${now}
-      </div>
-    </div>
-  `;
-
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
-  container.innerHTML = html;
-  document.body.appendChild(container);
-
-  try {
-    const element = container.querySelector('#pdf-content') as HTMLElement;
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
-
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position -= pageHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    pdf.save(`finance-report-${now.replace(/\s/g, '-')}.pdf`);
-  } finally {
-    document.body.removeChild(container);
-  }
+  doc.save(`finance_report_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 // ─── Export Menu ───────────────────────────────────────────────────────────────
@@ -433,11 +319,11 @@ export function Dashboard() {
   const savings = monthlyBudget - expenseSummary.total;
   const savingsPercent = Math.max(0, Math.min(100, (savings / monthlyBudget) * 100));
 
-  const handleExcelExport = () =>
-    exportToExcel(expenseSummary, upcomingBills, subscriptions, loans, monthlyBudget);
+  const onExcelExport = () =>
+    handleExportExcel(expenseSummary, upcomingBills, subscriptions, loans, monthlyBudget);
 
-  const handlePDFExport = () =>
-    exportToPDF(expenseSummary, upcomingBills, subscriptions, loans, monthlyBudget);
+  const onPDFExport = () =>
+    handleExportPDF(expenseSummary, upcomingBills, subscriptions, loans, monthlyBudget);
 
   if (loading) return <Spinner text='Loading your dashboard...' />;
   
@@ -452,7 +338,7 @@ export function Dashboard() {
             {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <ExportMenu onExcelExport={handleExcelExport} onPDFExport={handlePDFExport} />
+        <ExportMenu onExcelExport={onExcelExport} onPDFExport={onPDFExport} />
       </div>
 
       {/* Stats Cards */}
@@ -658,7 +544,7 @@ function StatCard({ title, value, subtitle, icon: Icon, iconBg, iconColor, trend
   title: string;
   value: string;
   subtitle: string;
-  icon: typeof Receipt;
+  icon: any;
   iconBg: string;
   iconColor: string;
   trend: 'up' | 'down' | 'neutral';

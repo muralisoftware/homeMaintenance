@@ -2,10 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Pin, Plus, Trash2, Search, X, Check,
   StickyNote, Star, Tag, Clock, Home,
-  Loader2, AlertCircle, RefreshCw, Filter, ChevronLeft
+  Loader2, AlertCircle, RefreshCw, Filter, ChevronLeft, Download, FileSpreadsheet
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type NoteColor = 'yellow' | 'teal' | 'rose' | 'sky' | 'amber' | 'violet';
@@ -692,6 +693,27 @@ export function NotesPage() {
     }
   };
 
+  const handleExportPDF = () => {
+    const headers = [['Date', 'Tag', 'Title', 'Content']];
+    const data = filtered.map((n) => [
+      n.createdAt.toLocaleDateString('en-IN'),
+      n.tag,
+      n.title,
+      n.content,
+    ]);
+    exportToPDF('My Notes Report', headers, data, 'notes_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = filtered.map((n) => ({
+      Date: n.createdAt,
+      Tag: n.tag,
+      Title: n.title,
+      Content: n.content,
+    }));
+    exportToExcel(data, 'notes_report');
+  };
+
   // ── Filters ───────────────────────────────────────────────────────────────
   const filtered = notes.filter(n => {
     const ms = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase());
@@ -723,7 +745,7 @@ export function NotesPage() {
 
       <div style={{
         display: 'flex',
-        height: '100dvh',          /* dynamic viewport height — fixes mobile browser chrome */
+        height: '100dvh',
         background: '#0f172a',
         fontFamily: "'Syne', sans-serif",
         overflow: 'hidden',
@@ -868,9 +890,30 @@ export function NotesPage() {
                 )}
 
                 {/* Refresh */}
-                <button onClick={fetchNotes} disabled={fetchLoading} title="Refresh" style={{ padding: '8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(148,163,184,0.8)', cursor: fetchLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                  <RefreshCw size={15} style={fetchLoading ? { animation: 'spin 1s linear infinite' } : {}} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1">
+                    <button
+                      onClick={handleExportPDF}
+                      className="p-1.5 hover:bg-white/5 text-slate-400 transition-colors rounded-lg flex items-center gap-1.5 text-[10px] font-medium"
+                      title="Download PDF"
+                    >
+                      <Download className="w-3.5 h-3.5 text-rose-500" />
+                      PDF
+                    </button>
+                    <div className="w-px h-3 bg-white/10 mx-1" />
+                    <button
+                      onClick={handleExportExcel}
+                      className="p-1.5 hover:bg-white/5 text-slate-400 transition-colors rounded-lg flex items-center gap-1.5 text-[10px] font-medium"
+                      title="Download Excel"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                      Excel
+                    </button>
+                  </div>
+                  <button onClick={fetchNotes} disabled={fetchLoading} title="Refresh" style={{ padding: '8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'rgba(148,163,184,0.8)', cursor: fetchLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    <RefreshCw size={15} style={fetchLoading ? { animation: 'spin 1s linear infinite' } : {}} />
+                  </button>
+                </div>
 
                 {/* Add (desktop) */}
                 {!isMobile && (
@@ -917,7 +960,6 @@ export function NotesPage() {
             overflowY: 'auto',
             overflowX: 'hidden',
             padding: isMobile ? '1rem' : '1.25rem 1.5rem',
-            // extra bottom padding on mobile so FAB doesn't overlap last card
             paddingBottom: isMobile ? '90px' : '1.5rem',
             WebkitOverflowScrolling: 'touch',
           }}>

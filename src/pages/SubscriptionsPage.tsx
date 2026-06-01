@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Plus, X, CreditCard, Trash2, Loader2, Calendar, IndianRupee, Power, PowerOff,
+  Plus, X, CreditCard, Trash2, Loader2, Calendar, IndianRupee, Power, PowerOff, Edit2, Download, FileSpreadsheet,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 const SUB_CATEGORIES = [
   'entertainment', 'music', 'video', 'fitness', 'cloud', 'software', 'news', 'other',
@@ -31,6 +32,7 @@ export function SubscriptionsPage() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     provider: '',
@@ -57,7 +59,7 @@ export function SubscriptionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from('subscriptions').insert({
+    const subData = {
       user_id: user!.id,
       service_name: form.name,
       provider: form.provider,
@@ -65,10 +67,56 @@ export function SubscriptionsPage() {
       billing_cycle: form.billing_cycle,
       next_billing_date: form.next_billing_date,
       category: form.category,
-    });
+    };
+
+    if (editingId) {
+      await supabase.from('subscriptions').update(subData).eq('id', editingId);
+      setEditingId(null);
+    } else {
+      await supabase.from('subscriptions').insert(subData);
+    }
+
     setForm({ name: '', provider: '', amount: '', billing_cycle: 'monthly', next_billing_date: new Date().toISOString().split('T')[0], category: 'entertainment' });
     setShowForm(false);
     loadSubs();
+  };
+
+  const handleEdit = (sub: Subscription) => {
+    setForm({
+      name: sub.name,
+      provider: sub.provider || '',
+      amount: sub.amount.toString(),
+      billing_cycle: sub.billing_cycle,
+      next_billing_date: sub.next_billing_date,
+      category: sub.category,
+    });
+    setEditingId(sub.id);
+    setShowForm(true);
+  };
+
+  const handleExportPDF = () => {
+    const headers = [['Name', 'Provider', 'Amount (₹)', 'Cycle', 'Next Date', 'Status']];
+    const data = subs.map((s) => [
+      s.name,
+      s.provider || '-',
+      s.amount.toLocaleString('en-IN'),
+      s.billing_cycle,
+      new Date(s.next_billing_date).toLocaleDateString('en-IN'),
+      s.is_active ? 'Active' : 'Paused',
+    ]);
+    exportToPDF('Subscriptions Report', headers, data, 'subscriptions_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = subs.map((s) => ({
+      Name: s.name,
+      Provider: s.provider,
+      Amount: s.amount,
+      BillingCycle: s.billing_cycle,
+      NextBillingDate: s.next_billing_date,
+      Status: s.is_active ? 'Active' : 'Paused',
+    }));
+    exportToExcel(data, 'subscriptions_report');
   };
 
   const toggleActive = async (sub: Subscription) => {
@@ -105,13 +153,34 @@ export function SubscriptionsPage() {
           <h2 className="text-2xl font-bold text-slate-900">Subscriptions</h2>
           <p className="text-sm text-slate-500 mt-0.5">Track recurring subscriptions and services</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Subscription
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={handleExportPDF}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4 text-rose-500" />
+              PDF
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              onClick={handleExportExcel}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Excel
+            </button>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', provider: '', amount: '', billing_cycle: 'monthly', next_billing_date: new Date().toISOString().split('T')[0], category: 'entertainment' }); }}
+            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Subscription
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -135,7 +204,7 @@ export function SubscriptionsPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="text-lg font-semibold text-slate-900">Add Subscription</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{editingId ? 'Edit Subscription' : 'Add Subscription'}</h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -221,7 +290,7 @@ export function SubscriptionsPage() {
                 type="submit"
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Add Subscription
+                {editingId ? 'Update Subscription' : 'Add Subscription'}
               </button>
             </form>
           </div>
@@ -258,21 +327,31 @@ export function SubscriptionsPage() {
                 </p>
               </div>
               <p className="text-sm font-semibold text-slate-900">₹{Number(sub.amount).toLocaleString('en-IN')}</p>
-              <button
-                onClick={() => toggleActive(sub)}
-                className={`p-1.5 rounded-lg hover:bg-slate-100 transition-colors ${
-                  sub.is_active ? 'text-emerald-500 hover:text-slate-400' : 'text-slate-300 hover:text-emerald-500'
-                }`}
-                title={sub.is_active ? 'Pause' : 'Resume'}
-              >
-                {sub.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={() => handleDelete(sub.id)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleEdit(sub)}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-teal-600 transition-colors"
+                  title="Edit"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => toggleActive(sub)}
+                  className={`p-1.5 rounded-lg hover:bg-slate-100 transition-colors ${
+                    sub.is_active ? 'text-emerald-500 hover:text-slate-400' : 'text-slate-300 hover:text-emerald-500'
+                  }`}
+                  title={sub.is_active ? 'Pause' : 'Resume'}
+                >
+                  {sub.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => handleDelete(sub.id)}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

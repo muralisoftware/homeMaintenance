@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Plus, X, FolderLock, Trash2, Loader2, FileText, Calendar, AlertTriangle,
+  Plus, X, FolderLock, Trash2, Loader2, FileText, Calendar, AlertTriangle, Edit2, Download, FileSpreadsheet,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 const DOC_TYPES = [
   'eb_receipt', 'insurance', 'house_tax', 'id_proof', 'warranty',
@@ -38,6 +39,7 @@ export function DocumentsPage() {
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [form, setForm] = useState({
     title: '',
@@ -65,7 +67,7 @@ export function DocumentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await supabase.from('documents').insert({
+    const docData = {
       user_id: user!.id,
       title: form.title,
       document_type: form.document_type,
@@ -73,10 +75,55 @@ export function DocumentsPage() {
       file_type: form.file_type,
       notes: form.notes,
       expiry_date: form.expiry_date || null,
-    });
+    };
+
+    if (editingId) {
+      await supabase.from('documents').update(docData).eq('id', editingId);
+      setEditingId(null);
+    } else {
+      await supabase.from('documents').insert(docData);
+    }
+
     setForm({ title: '', document_type: 'other', file_url: '', file_type: '', notes: '', expiry_date: '' });
     setShowForm(false);
     loadDocs();
+  };
+
+  const handleEdit = (doc: Document) => {
+    setForm({
+      title: doc.title,
+      document_type: doc.document_type,
+      file_url: doc.file_url,
+      file_type: doc.file_type || '',
+      notes: doc.notes || '',
+      expiry_date: doc.expiry_date || '',
+    });
+    setEditingId(doc.id);
+    setShowForm(true);
+  };
+
+  const handleExportPDF = () => {
+    const headers = [['Title', 'Type', 'File Type', 'Expiry Date', 'Notes']];
+    const data = docs.map((d) => [
+      d.title,
+      docLabels[d.document_type] || d.document_type,
+      d.file_type || '-',
+      d.expiry_date ? new Date(d.expiry_date).toLocaleDateString('en-IN') : '-',
+      d.notes || '-',
+    ]);
+    exportToPDF('Document Manager Report', headers, data, 'documents_report');
+  };
+
+  const handleExportExcel = () => {
+    const data = docs.map((d) => ({
+      Title: d.title,
+      Type: docLabels[d.document_type] || d.document_type,
+      FileType: d.file_type,
+      ExpiryDate: d.expiry_date,
+      Notes: d.notes,
+      URL: d.file_url,
+    }));
+    exportToExcel(data, 'documents_report');
   };
 
   const handleDelete = async (id: string) => {
@@ -98,16 +145,37 @@ export function DocumentsPage() {
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Digital Locker</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Document Manager</h2>
           <p className="text-sm text-slate-500 mt-0.5">Securely store important documents and receipts</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Document
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={handleExportPDF}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4 text-rose-500" />
+              PDF
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <button
+              onClick={handleExportExcel}
+              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              title="Download Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+              Excel
+            </button>
+          </div>
+          <button
+            onClick={() => { setShowForm(true); setEditingId(null); setForm({ title: '', document_type: 'other', file_url: '', file_type: '', notes: '', expiry_date: '' }); }}
+            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Document
+          </button>
+        </div>
       </div>
 
       {/* Expiring soon alert */}
@@ -151,7 +219,7 @@ export function DocumentsPage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="text-lg font-semibold text-slate-900">Add Document</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{editingId ? 'Edit Document' : 'Add Document'}</h3>
               <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
@@ -227,7 +295,7 @@ export function DocumentsPage() {
                 type="submit"
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Save Document
+                {editingId ? 'Update Document' : 'Save Document'}
               </button>
             </form>
           </div>
@@ -257,12 +325,20 @@ export function DocumentsPage() {
                   <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-lg">
                     {docIcons[doc.document_type] || '📄'}
                   </div>
-                  <button
-                    onClick={() => handleDelete(doc.id)}
-                    className="p-1 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleEdit(doc)}
+                      className="p-1 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-teal-600 transition-colors"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(doc.id)}
+                      className="p-1 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
                 <h4 className="text-sm font-medium text-slate-900 mb-1">{doc.title}</h4>
                 <p className="text-xs text-slate-500 mb-3">
