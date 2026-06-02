@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
+import { DataTable, Column } from '../components/DataTable';
 
 const SUB_CATEGORIES = [
   'entertainment', 'music', 'video', 'fitness', 'cloud', 'software', 'news', 'other',
@@ -143,6 +144,77 @@ export function SubscriptionsPage() {
     if (sub.billing_cycle === 'quarterly') return s + Number(sub.amount) * 4;
     return s + Number(sub.amount);
   }, 0);
+
+  const columns: Column<Subscription>[] = [
+    {
+      header: 'Name',
+      key: 'name',
+      sortable: true,
+      render: (sub) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-darkblue-50 flex items-center justify-center text-sm">
+            {subIcons[sub.category] || '📌'}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-darkblue-900 flex items-center gap-2">
+              {sub.name}
+              {!sub.is_active && (
+                <span className="text-[9px] font-bold text-darkblue-400 bg-darkblue-100 px-1 py-0.5 rounded uppercase tracking-wider">Paused</span>
+              )}
+            </span>
+            <span className="text-xs text-darkblue-400">{sub.provider || 'No provider'}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Amount',
+      key: 'amount',
+      sortable: true,
+      align: 'right',
+      render: (sub) => (
+        <span className={`text-sm font-bold ${!sub.is_active ? 'text-darkblue-400' : 'text-darkblue-900'}`}>
+          ₹{Number(sub.amount).toLocaleString('en-IN')}
+        </span>
+      ),
+    },
+    {
+      header: 'Cycle',
+      key: 'billing_cycle',
+      sortable: true,
+      render: (sub) => (
+        <span className="text-xs font-medium text-darkblue-500 capitalize bg-darkblue-50 px-2 py-1 rounded-lg">
+          {sub.billing_cycle}
+        </span>
+      ),
+    },
+    {
+      header: 'Next Billing',
+      key: 'next_billing_date',
+      sortable: true,
+      render: (sub) => (
+        <span className="text-sm text-darkblue-700">
+          {new Date(sub.next_billing_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </span>
+      ),
+    },
+    {
+      header: 'Status',
+      key: 'is_active',
+      align: 'center',
+      render: (sub) => (
+        <button
+          onClick={() => toggleActive(sub)}
+          className={`p-2 rounded-lg transition-colors ${
+            sub.is_active ? 'text-emerald-500 hover:bg-emerald-50' : 'text-darkblue-300 hover:bg-darkblue-50'
+          }`}
+          title={sub.is_active ? 'Pause' : 'Resume'}
+        >
+          {sub.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
+        </button>
+      ),
+    },
+  ];
 
   if (loading) return <Spinner text="Loading your subscriptions..." />;
   
@@ -297,65 +369,14 @@ export function SubscriptionsPage() {
         </div>
       )}
 
-      {/* List */}
-      { subs.length === 0 ? (
-        <div className="text-center py-16 text-darkblue-400">
-          <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No subscriptions tracked yet</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {subs.map((sub) => (
-            <div
-              key={sub.id}
-              className={`bg-white rounded-xl border border-darkblue-200 p-4 flex items-center gap-3 hover:shadow-sm transition-shadow ${
-                !sub.is_active ? 'opacity-60' : ''
-              }`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center text-lg">
-                {subIcons[sub.category] || '📌'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-darkblue-900">{sub.name}</p>
-                  {!sub.is_active && (
-                    <span className="text-[10px] font-medium text-darkblue-400 bg-darkblue-100 px-1.5 py-0.5 rounded">PAUSED</span>
-                  )}
-                </div>
-                <p className="text-xs text-darkblue-500">
-                  {sub.provider || 'No provider'} · {sub.billing_cycle} · Next: {new Date(sub.next_billing_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                </p>
-              </div>
-              <p className="text-sm font-semibold text-darkblue-900">₹{Number(sub.amount).toLocaleString('en-IN')}</p>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleEdit(sub)}
-                  className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-gold-600 transition-colors"
-                  title="Edit"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => toggleActive(sub)}
-                  className={`p-1.5 rounded-lg hover:bg-darkblue-100 transition-colors ${
-                    sub.is_active ? 'text-emerald-500 hover:text-darkblue-400' : 'text-darkblue-300 hover:text-emerald-500'
-                  }`}
-                  title={sub.is_active ? 'Pause' : 'Resume'}
-                >
-                  {sub.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
-                </button>
-                <button
-                  onClick={() => handleDelete(sub.id)}
-                  className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-red-500 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <DataTable
+        data={subs}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        emptyMessage="No subscriptions tracked yet"
+        emptyIcon={CreditCard}
+      />
     </div>
   );
 }

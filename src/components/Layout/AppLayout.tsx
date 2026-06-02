@@ -27,10 +27,43 @@ interface AppLayoutProps {
 
 export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    setShowLogoutConfirm(false);
+    await signOut();
+  };
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary-text)' }}>
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl p-6 text-center animate-in fade-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogOut className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-darkblue-900 mb-2">Are you sure?</h3>
+            <p className="text-sm text-darkblue-500 mb-6">You will be logged out of your secure session.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-darkblue-200 text-darkblue-600 font-medium hover:bg-darkblue-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -105,7 +138,7 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
                   <p className="text-xs font-medium opacity-60" style={{ color: 'var(--accent-main)' }}>Premium Plan</p>
                 </div>
                 <button
-                  onClick={signOut}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-red-400 transition-colors"
                   title="Sign out"
                 >

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
+import { DataTable, Column } from '../components/DataTable';
 
 const BILL_TYPES = [
   { value: 'electricity', label: 'Electricity' },
@@ -166,6 +167,85 @@ export function BillsPage() {
 
   const unpaidTotal = bills.filter((b) => !b.is_paid).reduce((s, b) => s + Number(b.amount), 0);
   const overdueCount = bills.filter((b) => !b.is_paid && new Date(b.due_date) < new Date()).length;
+
+  const columns: Column<Bill>[] = [
+    {
+      header: 'Status',
+      key: 'is_paid',
+      render: (bill) => (
+        <button
+          onClick={() => togglePaid(bill)}
+          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+            bill.is_paid
+              ? 'bg-emerald-500 border-emerald-500'
+              : 'border-darkblue-300 hover:border-gold-400'
+          }`}
+        >
+          {bill.is_paid && <CheckCircle2 className="w-4 h-4 text-white" />}
+        </button>
+      ),
+    },
+    {
+      header: 'Bill Type',
+      key: 'bill_type',
+      sortable: true,
+      render: (bill) => {
+        const typeLabel = BILL_TYPES.find((t) => t.value === bill.bill_type)?.label || bill.bill_type;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{billIcons[bill.bill_type] || '📄'}</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-darkblue-900 flex items-center gap-1">
+                {typeLabel}
+                {bill.is_recurring && <Repeat className="w-3 h-3 text-darkblue-400" />}
+              </span>
+              <span className="text-xs text-darkblue-400">{bill.provider || 'No provider'}</span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Due Date',
+      key: 'due_date',
+      sortable: true,
+      render: (bill) => {
+        const daysLeft = Math.ceil(
+          (new Date(bill.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        const isOverdue = daysLeft < 0 && !bill.is_paid;
+        const isUrgent = daysLeft <= 3 && daysLeft >= 0 && !bill.is_paid;
+
+        return (
+          <div className="flex flex-col">
+            <span className={`text-sm font-medium ${bill.is_paid ? 'text-darkblue-400' : 'text-darkblue-900'}`}>
+              {new Date(bill.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+            {!bill.is_paid ? (
+              <span className={`text-[10px] font-bold uppercase ${isOverdue ? 'text-red-500' : isUrgent ? 'text-amber-600' : 'text-darkblue-400'}`}>
+                {isOverdue ? 'Overdue!' : `${daysLeft} days left`}
+              </span>
+            ) : bill.paid_date && (
+              <span className="text-[10px] text-emerald-500 font-bold uppercase">
+                Paid {new Date(bill.paid_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Amount',
+      key: 'amount',
+      sortable: true,
+      align: 'right',
+      render: (bill) => (
+        <span className={`text-sm font-bold ${bill.is_paid ? 'text-darkblue-400 line-through' : 'text-darkblue-900'}`}>
+          ₹{Number(bill.amount).toLocaleString('en-IN')}
+        </span>
+      ),
+    },
+  ];
 
   if (loading) return <Spinner text="Loading your bills..." />;
 
@@ -382,89 +462,14 @@ export function BillsPage() {
         </div>
       )}
 
-      {/* Bill List */}
-      { filtered.length === 0 ? (
-        <div className="text-center py-16 text-darkblue-400">
-          <Bell className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No bills found. Add your first bill reminder!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((bill) => {
-            const daysLeft = Math.ceil(
-              (new Date(bill.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            );
-            const isOverdue = daysLeft < 0 && !bill.is_paid;
-            const isUrgent = daysLeft <= 3 && daysLeft >= 0 && !bill.is_paid;
-            const typeLabel = BILL_TYPES.find((t) => t.value === bill.bill_type)?.label || bill.bill_type;
-
-            return (
-              <div
-                key={bill.id}
-                className={`bg-white rounded-xl border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow ${
-                  bill.is_paid
-                    ? 'border-darkblue-100 opacity-70'
-                    : isOverdue
-                    ? 'border-red-200 bg-red-50/30'
-                    : isUrgent
-                    ? 'border-amber-200 bg-amber-50/30'
-                    : 'border-darkblue-200'
-                }`}
-              >
-                <button
-                  onClick={() => togglePaid(bill)}
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    bill.is_paid
-                      ? 'bg-emerald-500 border-emerald-500'
-                      : 'border-darkblue-300 hover:border-gold-400'
-                  }`}
-                >
-                  {bill.is_paid && <CheckCircle2 className="w-4 h-4 text-white" />}
-                </button>
-                <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center text-lg flex-shrink-0">
-                  {billIcons[bill.bill_type] || '📄'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-darkblue-900">{typeLabel}</p>
-                    {bill.is_recurring && <Repeat className="w-3 h-3 text-darkblue-400" />}
-                  </div>
-                  <p className="text-xs text-darkblue-500">
-                    {bill.provider || 'No provider'}
-                    {' · '}
-                    Due {new Date(bill.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    {!bill.is_paid && (
-                      <span className={`ml-1 ${isOverdue ? 'text-red-500 font-medium' : isUrgent ? 'text-amber-600 font-medium' : ''}`}>
-                        {isOverdue ? '(Overdue!)' : isUrgent ? `(${daysLeft}d left)` : `(${daysLeft}d left)`}
-                      </span>
-                    )}
-                    {bill.is_paid && bill.paid_date && (
-                      <span className="text-emerald-500 ml-1"> · Paid {new Date(bill.paid_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-                    )}
-                  </p>
-                </div>
-                <p className={`text-sm font-semibold ${bill.is_paid ? 'text-darkblue-400 line-through' : 'text-darkblue-900'}`}>
-                  ₹{Number(bill.amount).toLocaleString('en-IN')}
-                </p>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleEdit(bill)}
-                    className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-gold-600 transition-colors"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(bill.id)}
-                    className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <DataTable
+        data={filtered}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        emptyMessage="No bills found. Add your first bill reminder!"
+        emptyIcon={Bell}
+      />
     </div>
   );
 }

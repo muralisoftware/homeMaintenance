@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {Plus, X, Landmark, Trash2, IndianRupee, Calendar, TrendingDown, Edit2, Download, FileSpreadsheet,} from 'lucide-react';
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
+import { DataTable, Column } from '../components/DataTable';
 
 const LOAN_TYPES = [
   { value: 'home', label: 'Home Loan' },
@@ -194,6 +195,88 @@ export function LoansPage() {
   const totalEMI = loans.filter((l) => l.is_active).reduce((s, l) => s + Number(l.emi_amount), 0);
 
   const loanPayments = selectedLoan ? payments.filter((p) => p.loan_id === selectedLoan) : [];
+
+  const columns: Column<Loan>[] = [
+    {
+      header: 'Lender / Bank',
+      key: 'bank_name',
+      sortable: true,
+      render: (loan) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-darkblue-50 flex items-center justify-center text-sm">
+            {loanIcons[loan.loan_type] || '🏦'}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-darkblue-900">{(loan as any).bank_name || 'No lender'}</span>
+            <span className="text-xs text-darkblue-400">{LOAN_TYPES.find(t => t.value === loan.loan_type)?.label}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Principal',
+      key: 'principal_amount',
+      sortable: true,
+      align: 'right',
+      render: (loan) => (
+        <span className="text-sm font-medium text-darkblue-700">₹{Number(loan.principal_amount).toLocaleString('en-IN')}</span>
+      ),
+    },
+    {
+      header: 'Outstanding Balance',
+      key: 'outstanding_balance',
+      sortable: true,
+      render: (loan) => {
+        const progress = loan.principal_amount > 0
+          ? ((Number(loan.principal_amount) - Number(loan.outstanding_balance)) / Number(loan.principal_amount)) * 100
+          : 0;
+        return (
+          <div className="flex flex-col min-w-[120px]">
+            <div className="flex justify-between mb-1">
+              <span className="text-xs font-bold text-rose-600">₹{Number(loan.outstanding_balance).toLocaleString('en-IN')}</span>
+              <span className="text-[10px] font-medium text-darkblue-400">{Math.round(progress)}%</span>
+            </div>
+            <div className="h-1.5 bg-darkblue-50 rounded-full overflow-hidden">
+              <div className="h-full bg-gold-500 rounded-full" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Monthly EMI',
+      key: 'emi_amount',
+      sortable: true,
+      align: 'right',
+      render: (loan) => (
+        <div className="flex flex-col items-end">
+          <span className="text-sm font-bold text-darkblue-900">₹{Number(loan.emi_amount).toLocaleString('en-IN')}</span>
+          <span className="text-[10px] text-darkblue-400">Due: {loan.emi_due_date || 'N/A'}</span>
+        </div>
+      ),
+    },
+    {
+      header: 'Payments',
+      key: 'id',
+      align: 'center',
+      render: (loan) => (
+        <div className="flex flex-col gap-1">
+          <button
+            onClick={() => setShowPaymentForm(loan.id)}
+            className="text-[10px] font-bold bg-gold-50 text-gold-700 px-2 py-1 rounded hover:bg-gold-100 uppercase tracking-wider"
+          >
+            Pay EMI
+          </button>
+          <button
+            onClick={() => setSelectedLoan(selectedLoan === loan.id ? null : loan.id)}
+            className="text-[10px] font-medium text-darkblue-400 hover:text-gold-600 underline"
+          >
+            History
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   if (loading) return <Spinner text="Loading your loans..." />;
 
@@ -437,125 +520,45 @@ export function LoansPage() {
         </div>
       )}
 
-      {/* Loan List */}
-      {loans.length === 0 ? (
-        <div className="text-center py-16 text-darkblue-400">
-          <Landmark className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No loans tracked yet</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {loans.map((loan) => {
-            const typeLabel = LOAN_TYPES.find((t) => t.value === loan.loan_type)?.label || loan.loan_type;
-            const progress = loan.principal_amount > 0
-              ? ((Number(loan.principal_amount) - Number(loan.outstanding_balance)) / Number(loan.principal_amount)) * 100
-              : 0;
-            const isSelected = selectedLoan === loan.id;
+      <DataTable
+        data={loans}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        emptyMessage="No loans tracked yet"
+        emptyIcon={Landmark}
+      />
 
-            return (
-              <div key={loan.id} className="bg-white rounded-2xl border border-darkblue-200 overflow-hidden">
-                <div className="p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-darkblue-50 flex items-center justify-center text-xl">
-                      {loanIcons[loan.loan_type] || '🏦'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-base font-semibold text-darkblue-900">{typeLabel}</p>
-                          <p className="text-xs text-darkblue-500">{(loan as any).bank_name || 'No lender'} · EMI due: {loan.emi_due_date || 'Not set'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEdit(loan)}
-                            className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-400 hover:text-gold-600 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setShowPaymentForm(loan.id)}
-                            className="text-xs font-medium bg-gold-50 text-gold-700 px-3 py-1.5 rounded-lg hover:bg-gold-100 transition-colors"
-                          >
-                            Pay EMI
-                          </button>
-                          <button
-                            onClick={() => handleDelete(loan.id)}
-                            className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-red-500 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    <div>
-                      <p className="text-xs text-darkblue-400">Principal</p>
-                      <p className="text-sm font-semibold text-darkblue-700">₹{Number(loan.principal_amount).toLocaleString('en-IN')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-darkblue-400">Outstanding</p>
-                      <p className="text-sm font-semibold text-rose-600">₹{Number(loan.outstanding_balance).toLocaleString('en-IN')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-darkblue-400">EMI</p>
-                      <p className="text-sm font-semibold text-darkblue-700">₹{Number(loan.emi_amount).toLocaleString('en-IN')}</p>
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-darkblue-400">Paid off</span>
-                      <span className="text-xs font-medium text-gold-600">{Math.round(progress)}%</span>
-                    </div>
-                    <div className="h-2 bg-darkblue-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gold-500 rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {loan.tenure_months > 0 && (
-                    <p className="text-xs text-darkblue-400 mt-2">
-                      {loan.paid_months || 0} of {loan.tenure_months} EMIs paid
-                      {loan.interest_rate > 0 && ` · ${loan.interest_rate}% interest`}
-                    </p>
-                  )}
-
-                  {/* Toggle payment history */}
-                  <button
-                    onClick={() => setSelectedLoan(isSelected ? null : loan.id)}
-                    className="mt-3 text-xs text-gold-600 hover:text-gold-700 font-medium flex items-center gap-1"
-                  >
-                    <TrendingDown className="w-3 h-3" />
-                    {isSelected ? 'Hide' : 'View'} payment history
-                  </button>
-                </div>
-
-                {isSelected && loanPayments.length > 0 && (
-                  <div className="border-t border-darkblue-100 px-5 py-3 bg-darkblue-50/50">
-                    <p className="text-xs font-medium text-darkblue-500 mb-2">Payment History</p>
-                    <div className="space-y-2">
-                      {loanPayments.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between text-sm">
-                          <span className="text-darkblue-600">
-                            {new Date(p.payment_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            {p.notes && <span className="text-darkblue-400 ml-2">· {p.notes}</span>}
-                          </span>
-                          <span className="font-medium text-darkblue-900">₹{Number(p.amount).toLocaleString('en-IN')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {selectedLoan && loanPayments.length > 0 && (
+        <div className="mt-8 bg-white rounded-2xl border border-darkblue-200 overflow-hidden shadow-sm">
+          <div className="p-5 border-b border-darkblue-100 flex items-center justify-between bg-darkblue-50/50">
+            <h3 className="text-sm font-bold text-darkblue-900 uppercase tracking-wider">
+              Payment History: {loans.find(l => l.id === selectedLoan)?.bank_name || 'Selected Loan'}
+            </h3>
+            <button onClick={() => setSelectedLoan(null)} className="text-xs text-darkblue-500 hover:text-darkblue-700">Close</button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-white border-b border-darkblue-100">
+                  <th className="px-6 py-3 text-[10px] font-bold text-darkblue-400 uppercase">Date</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-darkblue-400 uppercase">Notes</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-darkblue-400 uppercase text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-darkblue-100">
+                {loanPayments.map((p) => (
+                  <tr key={p.id}>
+                    <td className="px-6 py-3 text-sm text-darkblue-900">
+                      {new Date(p.payment_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-darkblue-500">{p.notes || '-'}</td>
+                    <td className="px-6 py-3 text-sm font-bold text-darkblue-900 text-right">₹{Number(p.amount).toLocaleString('en-IN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
+import { DataTable, Column } from '../components/DataTable';
 
 const MAINT_CATEGORIES = [
   'ac_service', 'bike_service', 'car_service', 'water_tank', 'pest_control',
@@ -155,6 +156,84 @@ export function MaintenancePage() {
   });
 
   const overdueCount = tasks.filter((t) => !t.is_completed && new Date(t.due_date) < new Date()).length;
+
+  const columns: Column<MaintenanceTask>[] = [
+    {
+      header: 'Status',
+      key: 'is_completed',
+      render: (task) => (
+        <button
+          onClick={() => toggleComplete(task)}
+          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+            task.is_completed
+              ? 'bg-emerald-500 border-emerald-500'
+              : 'border-darkblue-300 hover:border-gold-400'
+          }`}
+        >
+          {task.is_completed && <CheckCircle2 className="w-4 h-4 text-white" />}
+        </button>
+      ),
+    },
+    {
+      header: 'Task / Category',
+      key: 'task_name',
+      sortable: true,
+      render: (task) => (
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-darkblue-50 flex items-center justify-center text-sm">
+            {maintIcons[task.category] || '🔧'}
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-sm font-medium ${task.is_completed ? 'text-darkblue-400 line-through' : 'text-darkblue-900'}`}>
+              {task.task_name}
+            </span>
+            <span className="text-xs text-darkblue-400">
+              {maintLabels[task.category] || task.category}
+              {task.is_recurring && <span className="ml-1 text-gold-500">· Recurring</span>}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Due Date',
+      key: 'due_date',
+      sortable: true,
+      render: (task) => {
+        const daysLeft = Math.ceil(
+          (new Date(task.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        const isOverdue = daysLeft < 0 && !task.is_completed;
+        const isUrgent = daysLeft <= 7 && daysLeft >= 0 && !task.is_completed;
+
+        return (
+          <div className="flex flex-col">
+            <span className={`text-sm font-medium ${task.is_completed ? 'text-darkblue-400' : 'text-darkblue-900'}`}>
+              {new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+            {!task.is_completed ? (
+              <span className={`text-[10px] font-bold uppercase ${isOverdue ? 'text-red-500' : isUrgent ? 'text-amber-600' : 'text-darkblue-400'}`}>
+                {isOverdue ? 'Overdue!' : `${daysLeft} days left`}
+              </span>
+            ) : task.last_completed_date && (
+              <span className="text-[10px] text-emerald-500 font-bold uppercase">
+                Done {new Date(task.last_completed_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      header: 'Notes',
+      key: 'notes',
+      render: (task) => (
+        <p className="text-xs text-darkblue-500 max-w-[150px] truncate" title={task.notes}>
+          {task.notes || '-'}
+        </p>
+      ),
+    },
+  ];
 
   if (loading) return <Spinner text="Loading your maintenance tasks..." />;
 
@@ -342,84 +421,14 @@ export function MaintenancePage() {
         </div>
       )}
 
-      {/* Task List */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-darkblue-400">
-          <Wrench className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No maintenance tasks yet</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((task) => {
-            const daysLeft = Math.ceil(
-              (new Date(task.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-            );
-            const isOverdue = daysLeft < 0 && !task.is_completed;
-            const isUrgent = daysLeft <= 7 && daysLeft >= 0 && !task.is_completed;
-
-            return (
-              <div
-                key={task.id}
-                className={`bg-white rounded-xl border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow ${
-                  task.is_completed
-                    ? 'border-darkblue-100 opacity-70'
-                    : isOverdue
-                    ? 'border-red-200 bg-red-50/30'
-                    : isUrgent
-                    ? 'border-amber-200 bg-amber-50/30'
-                    : 'border-darkblue-200'
-                }`}
-              >
-                <button
-                  onClick={() => toggleComplete(task)}
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    task.is_completed
-                      ? 'bg-emerald-500 border-emerald-500'
-                      : 'border-darkblue-300 hover:border-gold-400'
-                  }`}
-                >
-                  {task.is_completed && <CheckCircle2 className="w-4 h-4 text-white" />}
-                </button>
-                <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center text-lg flex-shrink-0">
-                  {maintIcons[task.category] || '🔧'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${task.is_completed ? 'text-darkblue-400 line-through' : 'text-darkblue-900'}`}>
-                    {task.task_name}
-                  </p>
-                  <p className="text-xs text-darkblue-500">
-                    {maintLabels[task.category] || task.category}
-                    {' · '}
-                    Due {new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    {!task.is_completed && (
-                      <span className={`ml-1 ${isOverdue ? 'text-red-500 font-medium' : isUrgent ? 'text-amber-600 font-medium' : ''}`}>
-                        {isOverdue ? '(Overdue!)' : isUrgent ? `(${daysLeft}d left)` : `(${daysLeft}d left)`}
-                      </span>
-                    )}
-                    {task.is_recurring && <span className="ml-1 text-gold-500">· Recurring</span>}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleEdit(task)}
-                    className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-400 hover:text-gold-600 transition-colors"
-                    title="Edit"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-red-500 transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <DataTable
+        data={filtered}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        emptyMessage="No maintenance tasks yet"
+        emptyIcon={Wrench}
+      />
     </div>
   );
 }

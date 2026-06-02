@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Plus, Search, Filter, Trash2, CreditCard as Edit3, X, Loader2, Receipt, Calendar, IndianRupee, Download, FileSpreadsheet } from 'lucide-react';
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
+import { DataTable, Column } from '../components/DataTable';
 
 const CATEGORIES = [
   'grocery', 'food', 'medical', 'fuel', 'education',
@@ -32,6 +33,8 @@ export function ExpensesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [timeFilter, setTimeFilter] = useState('all');
+
   const [form, setForm] = useState({
     amount: '',
     category: 'grocery',
@@ -121,18 +124,77 @@ export function ExpensesPage() {
   const filtered = expenses.filter((e) => {
     const matchSearch = !search || e.description.toLowerCase().includes(search.toLowerCase()) || e.category.toLowerCase().includes(search.toLowerCase());
     const matchCategory = !filterCategory || e.category === filterCategory;
-    return matchSearch && matchCategory;
+    
+    // Time filter logic
+    const expenseDate = new Date(e.expense_date);
+    const now = new Date();
+    let matchTime = true;
+
+    if (timeFilter === 'today') {
+      matchTime = expenseDate.toDateString() === now.toDateString();
+    } else if (timeFilter === 'week') {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      matchTime = expenseDate >= startOfWeek;
+    } else if (timeFilter === 'month') {
+      matchTime = expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+    } else if (timeFilter === 'year') {
+      matchTime = expenseDate.getFullYear() === now.getFullYear();
+    }
+
+    return matchSearch && matchCategory && matchTime;
   });
 
   const totalFiltered = filtered.reduce((s, e) => s + Number(e.amount), 0);
 
-  // Group by date
-  const grouped: Record<string, Expense[]> = {};
-  filtered.forEach((e) => {
-    const key = e.expense_date;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(e);
-  });
+  const columns: Column<Expense>[] = [
+    {
+      header: 'Date',
+      key: 'expense_date',
+      sortable: true,
+      render: (e) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-darkblue-900">
+            {new Date(e.expense_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          <span className="text-[10px] text-darkblue-400 uppercase font-medium">
+            {new Date(e.expense_date).toLocaleDateString('en-IN', { weekday: 'short' })}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: 'Category',
+      key: 'category',
+      sortable: true,
+      render: (e) => (
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{categoryEmojis[e.category] || '📌'}</span>
+          <span className="text-sm text-darkblue-700 capitalize">{e.category}</span>
+        </div>
+      ),
+    },
+    {
+      header: 'Description',
+      key: 'description',
+      sortable: true,
+      render: (e) => (
+        <p className="text-sm text-darkblue-900 max-w-[200px] truncate" title={e.description}>
+          {e.description || '-'}
+        </p>
+      ),
+    },
+    {
+      header: 'Amount',
+      key: 'amount',
+      sortable: true,
+      align: 'right',
+      render: (e) => (
+        <span className="text-sm font-bold text-darkblue-900">₹{Number(e.amount).toLocaleString('en-IN')}</span>
+      ),
+    },
+  ];
 
   if (loading) return <Spinner text="Loading your expenses..." />;
 
@@ -186,18 +248,34 @@ export function ExpensesPage() {
             className="w-full pl-10 pr-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent bg-white"
           />
         </div>
-        <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="pl-10 pr-8 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white appearance-none"
-          >
-            <option value="">All Categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{categoryEmojis[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</option>
-            ))}
-          </select>
+        <div className="flex gap-3">
+          <div className="relative flex-1 sm:flex-none">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
+            <select
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value)}
+              className="w-full pl-10 pr-8 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white appearance-none min-w-[140px]"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+            </select>
+          </div>
+          <div className="relative flex-1 sm:flex-none">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full pl-10 pr-8 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white appearance-none min-w-[150px]"
+            >
+              <option value="">All Categories</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{categoryEmojis[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -280,62 +358,14 @@ export function ExpensesPage() {
         </div>
       )}
 
-      {/* Expense List */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-darkblue-400">
-          <Receipt className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">No expenses found. Start tracking your spending!</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {Object.entries(grouped).map(([date, items]) => (
-            <div key={date}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-medium text-darkblue-400 uppercase tracking-wider">
-                  {new Date(date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                </span>
-                <div className="flex-1 h-px bg-darkblue-100" />
-                <span className="text-xs font-medium text-darkblue-500">
-                  ₹{items.reduce((s, e) => s + Number(e.amount), 0).toLocaleString('en-IN')}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {items.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="bg-white rounded-xl border border-darkblue-200 p-4 flex items-center gap-3 hover:shadow-sm transition-shadow group"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center text-lg">
-                      {categoryEmojis[expense.category] || '📌'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-darkblue-900 truncate">
-                        {expense.description || expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}
-                      </p>
-                      <p className="text-xs text-darkblue-400 capitalize">{expense.category}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-darkblue-900">₹{Number(expense.amount).toLocaleString('en-IN')}</p>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleEdit(expense)}
-                        className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-400 hover:text-gold-600"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(expense.id)}
-                        className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-400 hover:text-red-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <DataTable
+        data={filtered}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        emptyMessage="No expenses found. Start tracking your spending!"
+        emptyIcon={Receipt}
+      />
     </div>
   );
 }
