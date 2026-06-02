@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -50,7 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: getRedirectUrl(),
       },
     });
-    if (error) return { error: error.message };
+    if (error) {
+      toast.error(error.message);
+      return { error: error.message };
+    }
 
     const { data: { user: newUser } } = await supabase.auth.getUser();
     if (newUser) {
@@ -59,12 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         full_name: fullName,
       });
     }
+    toast.success('Registration successful! Please check your email.');
     return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    if (error) {
+      toast.error(error.message);
+      return { error: error.message };
+    }
+    toast.success('Welcome back!');
+    return { error: null };
   };
 
   const signOut = async () => {
@@ -78,7 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         redirectTo: getRedirectUrl(),
       },
     });
-    return { error: error?.message ?? null };
+    if (error) {
+      toast.error(error.message);
+      return { error: error.message };
+    }
+    return { error: null };
   };
 
   return (

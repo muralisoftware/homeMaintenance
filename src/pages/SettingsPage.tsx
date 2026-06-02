@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Settings, User, Key, Copy, Check, Loader2, Pencil, X, AlertCircle, ShieldCheck, Palette, Moon } from 'lucide-react';
 import Spinner from '../components/spinner';
+import toast from 'react-hot-toast';
 
 type Theme = 'default' | 'darkblue' | 'violet' | 'royalblue' | 'dark';
 
@@ -52,41 +53,43 @@ export function SettingsPage() {
     setError('');
     if (!displayName.trim()) {
       setError('Display name cannot be empty.');
+      toast.error('Display name is required');
       return;
     }
 
     setSaving(true);
 
-    // 1. Update your custom users table
-    const { error: dbError } = await supabase.from('users')
-      .update({
-        display_name: displayName.trim(),
-        phone: phone.trim(),
-      })
-      .eq('id', user!.id);
+    try {
+      // 1. Update your custom users table
+      const { error: dbError } = await supabase.from('users')
+        .update({
+          display_name: displayName.trim(),
+          phone: phone.trim(),
+        })
+        .eq('id', user!.id);
 
-    if (dbError) {
-      setError('Failed to update profile. Please try again.');
+      if (dbError) throw dbError;
+
+      // 2. Also update Supabase Auth user_metadata so the name
+      //    reflects everywhere (email templates, auth.users, etc.)
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          display_name: displayName.trim(),
+          full_name: displayName.trim(),
+        },
+      });
+
+      if (authError) throw authError;
+
+      toast.success('Profile updated successfully');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile.');
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
       setSaving(false);
-      return;
     }
-
-    // 2. Also update Supabase Auth user_metadata so the name
-    //    reflects everywhere (email templates, auth.users, etc.)
-    const { error: authError } = await supabase.auth.updateUser({
-      data: {
-        display_name: displayName.trim(),
-        full_name: displayName.trim(),
-      },
-    });
-
-    if (authError) {
-      setError('Profile saved but auth metadata update failed.');
-    }
-
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
   };
 
   const handleThemeChange = (theme: Theme) => {
@@ -97,6 +100,7 @@ export function SettingsPage() {
     } else {
       document.documentElement.setAttribute('data-theme', theme);
     }
+    toast.success(`${theme.charAt(0).toUpperCase() + theme.slice(1)} theme applied`);
   };
 
   const handlePasswordChange = async () => {
@@ -115,26 +119,32 @@ export function SettingsPage() {
     }
 
     setPasswordSaving(true);
-    const { error: pwError } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
+    try {
+      const { error: pwError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
 
-    if (pwError) {
-      setPasswordError(pwError.message || 'Failed to update password.');
-    } else {
+      if (pwError) throw pwError;
+
+      toast.success('Password updated successfully');
       setPasswordSaved(true);
       setNewPassword('');
       setConfirmPassword('');
       setShowPasswordForm(false);
       setTimeout(() => setPasswordSaved(false), 3000);
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to update password.');
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setPasswordSaving(false);
     }
-    setPasswordSaving(false);
   };
 
   const copyUserId = () => {
     if (user) {
       navigator.clipboard.writeText(user.id);
       setCopied(true);
+      toast.success('User ID copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     }
   };

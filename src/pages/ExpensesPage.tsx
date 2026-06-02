@@ -5,6 +5,7 @@ import { Plus, Search, Filter, Trash2, CreditCard as Edit3, X, Loader2, Receipt,
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import { DataTable, Column } from '../components/DataTable';
+import toast from 'react-hot-toast';
 
 const CATEGORIES = [
   'grocery', 'food', 'medical', 'fuel', 'education',
@@ -59,29 +60,39 @@ export function ExpensesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      await supabase
-        .from('expenses')
-        .update({
+    try {
+      if (editingId) {
+        const { error } = await supabase
+          .from('expenses')
+          .update({
+            amount: parseFloat(form.amount),
+            category: form.category,
+            description: form.description,
+            expense_date: form.expense_date,
+          })
+          .eq('id', editingId);
+        
+        if (error) throw error;
+        toast.success('Expense updated successfully');
+        setEditingId(null);
+      } else {
+        const { error } = await supabase.from('expenses').insert({
+          user_id: user!.id,
           amount: parseFloat(form.amount),
           category: form.category,
           description: form.description,
           expense_date: form.expense_date,
-        })
-        .eq('id', editingId);
-      setEditingId(null);
-    } else {
-      await supabase.from('expenses').insert({
-        user_id: user!.id,
-        amount: parseFloat(form.amount),
-        category: form.category,
-        description: form.description,
-        expense_date: form.expense_date,
-      });
+        });
+        
+        if (error) throw error;
+        toast.success('Expense added successfully');
+      }
+      setForm({ amount: '', category: 'grocery', description: '', expense_date: new Date().toISOString().split('T')[0] });
+      setShowForm(false);
+      loadExpenses();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save expense');
     }
-    setForm({ amount: '', category: 'grocery', description: '', expense_date: new Date().toISOString().split('T')[0] });
-    setShowForm(false);
-    loadExpenses();
   };
 
   const handleEdit = (expense: Expense) => {
@@ -96,8 +107,14 @@ export function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('expenses').delete().eq('id', id);
-    loadExpenses();
+    try {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Expense deleted successfully');
+      loadExpenses();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete expense');
+    }
   };
 
   const handleExportPDF = () => {

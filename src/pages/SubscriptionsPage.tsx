@@ -7,6 +7,7 @@ import {
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import { DataTable, Column } from '../components/DataTable';
+import toast from 'react-hot-toast';
 
 const SUB_CATEGORIES = [
   'entertainment', 'music', 'video', 'fitness', 'cloud', 'software', 'news', 'other',
@@ -60,26 +61,34 @@ export function SubscriptionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subData = {
-      user_id: user!.id,
-      service_name: form.name,
-      provider: form.provider,
-      amount: parseFloat(form.amount),
-      billing_cycle: form.billing_cycle,
-      next_billing_date: form.next_billing_date,
-      category: form.category,
-    };
+    try {
+      const subData = {
+        user_id: user!.id,
+        service_name: form.name,
+        provider: form.provider,
+        amount: parseFloat(form.amount),
+        billing_cycle: form.billing_cycle,
+        next_billing_date: form.next_billing_date,
+        category: form.category,
+      };
 
-    if (editingId) {
-      await supabase.from('subscriptions').update(subData).eq('id', editingId);
-      setEditingId(null);
-    } else {
-      await supabase.from('subscriptions').insert(subData);
+      if (editingId) {
+        const { error } = await supabase.from('subscriptions').update(subData).eq('id', editingId);
+        if (error) throw error;
+        toast.success('Subscription updated successfully');
+        setEditingId(null);
+      } else {
+        const { error } = await supabase.from('subscriptions').insert(subData);
+        if (error) throw error;
+        toast.success('Subscription added successfully');
+      }
+
+      setForm({ name: '', provider: '', amount: '', billing_cycle: 'monthly', next_billing_date: new Date().toISOString().split('T')[0], category: 'entertainment' });
+      setShowForm(false);
+      loadSubs();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save subscription');
     }
-
-    setForm({ name: '', provider: '', amount: '', billing_cycle: 'monthly', next_billing_date: new Date().toISOString().split('T')[0], category: 'entertainment' });
-    setShowForm(false);
-    loadSubs();
   };
 
   const handleEdit = (sub: Subscription) => {
@@ -121,16 +130,29 @@ export function SubscriptionsPage() {
   };
 
   const toggleActive = async (sub: Subscription) => {
-    await supabase
-      .from('subscriptions')
-      .update({ is_active: !sub.is_active })
-      .eq('id', sub.id);
-    loadSubs();
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ is_active: !sub.is_active })
+        .eq('id', sub.id);
+      
+      if (error) throw error;
+      toast.success(sub.is_active ? 'Subscription paused' : 'Subscription resumed');
+      loadSubs();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update status');
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('subscriptions').delete().eq('id', id);
-    loadSubs();
+    try {
+      const { error } = await supabase.from('subscriptions').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Subscription deleted successfully');
+      loadSubs();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete subscription');
+    }
   };
 
   const activeSubs = subs.filter((s) => s.is_active);

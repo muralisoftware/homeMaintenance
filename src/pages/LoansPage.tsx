@@ -5,6 +5,7 @@ import {Plus, X, Landmark, Trash2, IndianRupee, Calendar, TrendingDown, Edit2, D
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import { DataTable, Column } from '../components/DataTable';
+import toast from 'react-hot-toast';
 
 const LOAN_TYPES = [
   { value: 'home', label: 'Home Loan' },
@@ -87,33 +88,41 @@ export function LoansPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const loanData = {
-      user_id: user!.id,
-      loan_type: form.loan_type,
-      bank_name: form.lender_name,
-      principal_amount: parseFloat(form.principal_amount) || 0,
-      outstanding_balance: parseFloat(form.outstanding_balance) || 0,
-      interest_rate: parseFloat(form.interest_rate) || 0,
-      emi_amount: parseFloat(form.emi_amount) || 0,
-      emi_due_date: form.emi_due_date,
-      tenure_months: parseInt(form.tenure_months) || 0,
-      start_date: form.start_date,
-    };
+    try {
+      const loanData = {
+        user_id: user!.id,
+        loan_type: form.loan_type,
+        bank_name: form.lender_name,
+        principal_amount: parseFloat(form.principal_amount) || 0,
+        outstanding_balance: parseFloat(form.outstanding_balance) || 0,
+        interest_rate: parseFloat(form.interest_rate) || 0,
+        emi_amount: parseFloat(form.emi_amount) || 0,
+        emi_due_date: form.emi_due_date,
+        tenure_months: parseInt(form.tenure_months) || 0,
+        start_date: form.start_date,
+      };
 
-    if (editingId) {
-      await supabase.from('loans').update(loanData).eq('id', editingId);
-      setEditingId(null);
-    } else {
-      await supabase.from('loans').insert(loanData);
+      if (editingId) {
+        const { error } = await supabase.from('loans').update(loanData).eq('id', editingId);
+        if (error) throw error;
+        toast.success('Loan updated successfully');
+        setEditingId(null);
+      } else {
+        const { error } = await supabase.from('loans').insert(loanData);
+        if (error) throw error;
+        toast.success('Loan added successfully');
+      }
+
+      setForm({
+        loan_type: 'personal', lender_name: '', principal_amount: '',
+        outstanding_balance: '', interest_rate: '', emi_amount: '',
+        emi_due_date: '', tenure_months: '', start_date: new Date().toISOString().split('T')[0],
+      });
+      setShowForm(false);
+      loadLoans();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save loan');
     }
-
-    setForm({
-      loan_type: 'personal', lender_name: '', principal_amount: '',
-      outstanding_balance: '', interest_rate: '', emi_amount: '',
-      emi_due_date: '', tenure_months: '', start_date: new Date().toISOString().split('T')[0],
-    });
-    setShowForm(false);
-    loadLoans();
   };
 
   const handleEdit = (loan: Loan) => {
@@ -165,30 +174,47 @@ export function LoansPage() {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showPaymentForm) return;
-    const loan = loans.find((l) => l.id === showPaymentForm);
-    await supabase.from('loan_payments').insert({
-      loan_id: showPaymentForm,
-      amount: parseFloat(paymentForm.amount),
-      payment_date: paymentForm.payment_date,
-      notes: paymentForm.notes,
-    });
-    if (loan) {
-      await supabase
-        .from('loans')
-        .update({
-          outstanding_balance: Math.max(0, Number(loan.outstanding_balance) - parseFloat(paymentForm.amount)),
-          paid_months: loan.paid_months + 1,
-        })
-        .eq('id', showPaymentForm);
+    try {
+      const loan = loans.find((l) => l.id === showPaymentForm);
+      const { error: payError } = await supabase.from('loan_payments').insert({
+        loan_id: showPaymentForm,
+        amount: parseFloat(paymentForm.amount),
+        payment_date: paymentForm.payment_date,
+        notes: paymentForm.notes,
+      });
+
+      if (payError) throw payError;
+
+      if (loan) {
+        const { error: updateError } = await supabase
+          .from('loans')
+          .update({
+            outstanding_balance: Math.max(0, Number(loan.outstanding_balance) - parseFloat(paymentForm.amount)),
+            paid_months: (loan.paid_months || 0) + 1,
+          })
+          .eq('id', showPaymentForm);
+        
+        if (updateError) throw updateError;
+      }
+
+      toast.success('EMI payment recorded successfully');
+      setShowPaymentForm(null);
+      setPaymentForm({ amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '' });
+      loadLoans();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to record payment');
     }
-    setShowPaymentForm(null);
-    setPaymentForm({ amount: '', payment_date: new Date().toISOString().split('T')[0], notes: '' });
-    loadLoans();
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('loans').delete().eq('id', id);
-    loadLoans();
+    try {
+      const { error } = await supabase.from('loans').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Loan deleted successfully');
+      loadLoans();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete loan');
+    }
   };
 
   const totalOutstanding = loans.filter((l) => l.is_active).reduce((s, l) => s + Number(l.outstanding_balance), 0);

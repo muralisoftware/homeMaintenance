@@ -8,6 +8,7 @@ import {
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import { DataTable, Column } from '../components/DataTable';
+import toast from 'react-hot-toast';
 
 const BILL_TYPES = [
   { value: 'electricity', label: 'Electricity' },
@@ -75,33 +76,41 @@ export function BillsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const billData = {
-      user_id: user!.id,
-      bill_type: form.bill_type,
-      provider: form.provider,
-      amount: parseFloat(form.amount) || 0,
-      due_date: form.due_date,
-      // is_recurring: form.is_recurring,
-      // recurring_frequency: form.is_recurring ? form.recurring_frequency : '',
-      reminder_days: parseInt(form.reminder_days_before) || 3,
-      notes: form.notes,
-    };
+    try {
+      const billData = {
+        user_id: user!.id,
+        bill_type: form.bill_type,
+        provider: form.provider,
+        amount: parseFloat(form.amount) || 0,
+        due_date: form.due_date,
+        // is_recurring: form.is_recurring,
+        // recurring_frequency: form.is_recurring ? form.recurring_frequency : '',
+        reminder_days: parseInt(form.reminder_days_before) || 3,
+        notes: form.notes,
+      };
 
-    if (editingId) {
-      await supabase.from('bills').update(billData).eq('id', editingId);
-      setEditingId(null);
-    } else {
-      await supabase.from('bills').insert(billData);
+      if (editingId) {
+        const { error } = await supabase.from('bills').update(billData).eq('id', editingId);
+        if (error) throw error;
+        toast.success('Bill updated successfully');
+        setEditingId(null);
+      } else {
+        const { error } = await supabase.from('bills').insert(billData);
+        if (error) throw error;
+        toast.success('Bill added successfully');
+      }
+
+      setForm({
+        bill_type: 'electricity', provider: '', amount: '',
+        due_date: new Date().toISOString().split('T')[0],
+        is_recurring: false, recurring_frequency: 'monthly',
+        reminder_days_before: '3', notes: '',
+      });
+      setShowForm(false);
+      loadBills();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save bill');
     }
-
-    setForm({
-      bill_type: 'electricity', provider: '', amount: '',
-      due_date: new Date().toISOString().split('T')[0],
-      is_recurring: false, recurring_frequency: 'monthly',
-      reminder_days_before: '3', notes: '',
-    });
-    setShowForm(false);
-    loadBills();
   };
 
   const handleEdit = (bill: Bill) => {
@@ -143,20 +152,33 @@ export function BillsPage() {
   };
 
   const togglePaid = async (bill: Bill) => {
-    const isPaid = !bill.is_paid;
-    await supabase
-      .from('bills')
-      .update({
-        is_paid: isPaid,
-        paid_date: isPaid ? new Date().toISOString().split('T')[0] : null,
-      })
-      .eq('id', bill.id);
-    loadBills();
+    try {
+      const isPaid = !bill.is_paid;
+      const { error } = await supabase
+        .from('bills')
+        .update({
+          is_paid: isPaid,
+          paid_date: isPaid ? new Date().toISOString().split('T')[0] : null,
+        })
+        .eq('id', bill.id);
+      
+      if (error) throw error;
+      toast.success(isPaid ? 'Bill marked as paid' : 'Bill marked as unpaid');
+      loadBills();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update status');
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('bills').delete().eq('id', id);
-    loadBills();
+    try {
+      const { error } = await supabase.from('bills').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Bill deleted successfully');
+      loadBills();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete bill');
+    }
   };
 
   const filtered = bills.filter((b) => {

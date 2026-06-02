@@ -7,6 +7,7 @@ import {
 import Spinner from '../components/spinner';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 import { DataTable, Column } from '../components/DataTable';
+import toast from 'react-hot-toast';
 
 const MAINT_CATEGORIES = [
   'ac_service', 'bike_service', 'car_service', 'water_tank', 'pest_control',
@@ -71,29 +72,37 @@ export function MaintenancePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const taskData = {
-      user_id: user!.id,
-      task_name: form.task_name,
-      category: form.category,
-      due_date: form.due_date,
-      is_recurring: form.is_recurring,
-      recurring_frequency: form.is_recurring ? `every ${form.recurring_frequency} months` : '',
-      notes: form.notes,
-    };
+    try {
+      const taskData = {
+        user_id: user!.id,
+        task_name: form.task_name,
+        category: form.category,
+        due_date: form.due_date,
+        is_recurring: form.is_recurring,
+        recurring_frequency: form.is_recurring ? `every ${form.recurring_frequency} months` : '',
+        notes: form.notes,
+      };
 
-    if (editingId) {
-      await supabase.from('maintenance_tasks').update(taskData).eq('id', editingId);
-      setEditingId(null);
-    } else {
-      await supabase.from('maintenance_tasks').insert(taskData);
+      if (editingId) {
+        const { error } = await supabase.from('maintenance_tasks').update(taskData).eq('id', editingId);
+        if (error) throw error;
+        toast.success('Task updated successfully');
+        setEditingId(null);
+      } else {
+        const { error } = await supabase.from('maintenance_tasks').insert(taskData);
+        if (error) throw error;
+        toast.success('Task added successfully');
+      }
+
+      setForm({
+        task_name: '', category: 'ac_service', due_date: new Date().toISOString().split('T')[0],
+        is_recurring: false, recurring_frequency: '6', notes: '',
+      });
+      setShowForm(false);
+      loadTasks();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save task');
     }
-
-    setForm({
-      task_name: '', category: 'ac_service', due_date: new Date().toISOString().split('T')[0],
-      is_recurring: false, recurring_frequency: '6', notes: '',
-    });
-    setShowForm(false);
-    loadTasks();
   };
 
   const handleEdit = (task: MaintenanceTask) => {
@@ -133,20 +142,33 @@ export function MaintenancePage() {
   };
 
   const toggleComplete = async (task: MaintenanceTask) => {
-    const isCompleted = !task.is_completed;
-    await supabase
-      .from('maintenance_tasks')
-      .update({
-        is_completed: isCompleted,
-        last_completed_date: isCompleted ? new Date().toISOString().split('T')[0] : null,
-      })
-      .eq('id', task.id);
-    loadTasks();
+    try {
+      const isCompleted = !task.is_completed;
+      const { error } = await supabase
+        .from('maintenance_tasks')
+        .update({
+          is_completed: isCompleted,
+          last_completed_date: isCompleted ? new Date().toISOString().split('T')[0] : null,
+        })
+        .eq('id', task.id);
+      
+      if (error) throw error;
+      toast.success(isCompleted ? 'Task marked as completed' : 'Task marked as pending');
+      loadTasks();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update task');
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('maintenance_tasks').delete().eq('id', id);
-    loadTasks();
+    try {
+      const { error } = await supabase.from('maintenance_tasks').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Task deleted successfully');
+      loadTasks();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete task');
+    }
   };
 
   const filtered = tasks.filter((t) => {
@@ -239,6 +261,7 @@ export function MaintenancePage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-darkblue-900">Home Maintenance</h2>
@@ -320,7 +343,7 @@ export function MaintenancePage() {
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               filter === f
                 ? 'bg-gold-50 text-gold-700 border border-gold-200'
-                : 'bg-white text-darkblue-500 border border-darkblue-200 hover:bg-darkblue-50'
+                : 'bg-white text-darkblue-50 border border-darkblue-200 hover:bg-darkblue-50'
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
