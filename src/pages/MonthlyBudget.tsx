@@ -170,13 +170,13 @@ export function MonthlyBudget() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Monthly Budget</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Set and manage your monthly spending limit</p>
+          <h2 className="text-xl font-bold text-darkblue-900">Monthly Budget</h2>
+          <p className="text-sm text-darkblue-500 mt-0.5">Set and manage your monthly spending limit</p>
         </div>
         {!hasBudget && (
           <button
             onClick={openAddForm}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Set Budget
@@ -202,52 +202,52 @@ export function MonthlyBudget() {
 
       {/* Current Budget Card */}
       {hasBudget ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
+        <div className="bg-white rounded-2xl border border-darkblue-200 p-6 space-y-6">
 
           {/* Budget display */}
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1">Current Monthly Budget</p>
+              <p className="text-xs text-darkblue-400 uppercase tracking-wider font-medium mb-1">Current Monthly Budget</p>
               <div className="flex items-center gap-2">
-                <IndianRupee className="w-6 h-6 text-teal-600" />
-                <span className="text-4xl font-bold text-slate-900">{formattedBudget}</span>
+                <IndianRupee className="w-6 h-6 text-gold-600" />
+                <span className="text-4xl font-bold text-darkblue-900">{formattedBudget}</span>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-darkblue-400 mt-2">
                 Last updated: {updatedDate} at {updatedTime}
               </p>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center">
-              <Wallet className="w-7 h-7 text-teal-600" />
+            <div className="w-14 h-14 rounded-2xl bg-gold-50 flex items-center justify-center">
+              <Wallet className="w-7 h-7 text-gold-600" />
             </div>
           </div>
 
           {/* Per-period breakdown */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Daily</p>
-              <p className="text-base font-bold text-slate-800">
+            <div className="bg-darkblue-50 rounded-xl p-4 text-center">
+              <p className="text-[10px] text-darkblue-400 uppercase tracking-wider font-medium mb-1">Daily</p>
+              <p className="text-base font-bold text-darkblue-800">
                 ₹{Math.round(currentBudget / 30).toLocaleString('en-IN')}
               </p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium mb-1">Weekly</p>
-              <p className="text-base font-bold text-slate-800">
+            <div className="bg-darkblue-50 rounded-xl p-4 text-center">
+              <p className="text-[10px] text-darkblue-400 uppercase tracking-wider font-medium mb-1">Weekly</p>
+              <p className="text-base font-bold text-darkblue-800">
                 ₹{Math.round(currentBudget / 4).toLocaleString('en-IN')}
               </p>
             </div>
-            <div className="bg-teal-50 rounded-xl p-4 text-center border border-teal-100">
-              <p className="text-[10px] text-teal-600 uppercase tracking-wider font-medium mb-1">Monthly</p>
-              <p className="text-base font-bold text-teal-700">
+            <div className="bg-gold-50 rounded-xl p-4 text-center border border-gold-100">
+              <p className="text-[10px] text-gold-600 uppercase tracking-wider font-medium mb-1">Monthly</p>
+              <p className="text-base font-bold text-gold-700">
                 ₹{formattedBudget}
               </p>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-3 pt-2 border-t border-darkblue-100">
             <button
               onClick={openEditForm}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <Pencil className="w-4 h-4" />
               Edit Budget
@@ -263,17 +263,17 @@ export function MonthlyBudget() {
         </div>
       ) : (
         /* Empty state */
-        <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Wallet className="w-8 h-8 text-slate-400" />
+        <div className="bg-white rounded-2xl border border-darkblue-200 p-10 text-center">
+          <div className="w-16 h-16 bg-darkblue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Wallet className="w-8 h-8 text-darkblue-400" />
           </div>
-          <h3 className="text-base font-semibold text-slate-900 mb-1">No budget set</h3>
-          <p className="text-sm text-slate-500 mb-6">
+          <h3 className="text-base font-semibold text-darkblue-900 mb-1">No budget set</h3>
+          <p className="text-sm text-darkblue-500 mb-6">
             Set a monthly budget to track your savings and spending limits.
           </p>
           <button
             onClick={openAddForm}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
             Set Monthly Budget
@@ -282,14 +282,14 @@ export function MonthlyBudget() {
       )}
 
       {/* Tips card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
-        <h4 className="text-sm font-semibold text-slate-900">Budget Tips</h4>
+      <div className="bg-white rounded-2xl border border-darkblue-200 p-5 space-y-3">
+        <h4 className="text-sm font-semibold text-darkblue-900">Budget Tips</h4>
         <div className="space-y-2">
           <div className="flex items-start gap-3">
             <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-darkblue-500 leading-relaxed">
               Set a realistic budget based on your average monthly income minus fixed expenses like EMIs and rent.
             </p>
           </div>
@@ -297,15 +297,15 @@ export function MonthlyBudget() {
             <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
               <TrendingDown className="w-3.5 h-3.5 text-amber-600" />
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-darkblue-500 leading-relaxed">
               Review and update your budget every month as your income or expenses change.
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-lg bg-teal-50 flex items-center justify-center shrink-0 mt-0.5">
-              <Wallet className="w-3.5 h-3.5 text-teal-600" />
+            <div className="w-7 h-7 rounded-lg bg-gold-50 flex items-center justify-center shrink-0 mt-0.5">
+              <Wallet className="w-3.5 h-3.5 text-gold-600" />
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-darkblue-500 leading-relaxed">
               Your budget is used across the dashboard to calculate your monthly savings and spending progress.
             </p>
           </div>
@@ -320,28 +320,28 @@ export function MonthlyBudget() {
             {/* Modal header */}
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-darkblue-900">
                   {isEditing ? 'Edit Monthly Budget' : 'Set Monthly Budget'}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-darkblue-500 mt-0.5">
                   {isEditing ? 'Update your monthly spending limit' : 'Define your monthly spending limit'}
                 </p>
               </div>
               <button
                 onClick={closeForm}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-darkblue-100 transition-colors"
               >
-                <X className="w-4 h-4 text-slate-500" />
+                <X className="w-4 h-4 text-darkblue-500" />
               </button>
             </div>
 
             {/* Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700 uppercase tracking-wide">
+              <label className="text-xs font-medium text-darkblue-700 uppercase tracking-wide">
                 Monthly Budget Amount
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">₹</span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-darkblue-400 font-medium text-sm">₹</span>
                 <input
                   type="number"
                   value={budgetInput}
@@ -349,7 +349,7 @@ export function MonthlyBudget() {
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') closeForm(); }}
                   placeholder="e.g. 50000"
                   min="1"
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full pl-8 pr-4 py-3 border border-darkblue-300 rounded-xl text-darkblue-900 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
                   autoFocus
                 />
               </div>
@@ -360,7 +360,7 @@ export function MonthlyBudget() {
                 </p>
               )}
               {budgetInput && !isNaN(parseFloat(budgetInput)) && parseFloat(budgetInput) > 0 && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-darkblue-400">
                   ≈ ₹{Math.round(parseFloat(budgetInput) / 30).toLocaleString('en-IN')} / day &nbsp;·&nbsp;
                   ₹{Math.round(parseFloat(budgetInput) / 4).toLocaleString('en-IN')} / week
                 </p>
@@ -372,14 +372,14 @@ export function MonthlyBudget() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 transition-colors"
               >
                 <Check className="w-4 h-4" />
                 {saving ? 'Saving…' : isEditing ? 'Update Budget' : 'Set Budget'}
               </button>
               <button
                 onClick={closeForm}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium rounded-xl transition-colors"
+                className="px-4 py-2.5 bg-darkblue-100 hover:bg-darkblue-200 text-darkblue-600 text-sm font-medium rounded-xl transition-colors"
               >
                 Cancel
               </button>
@@ -397,12 +397,12 @@ export function MonthlyBudget() {
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Delete Budget?</h3>
-                <p className="text-xs text-slate-500 mt-0.5">This will remove your monthly budget setting.</p>
+                <h3 className="text-base font-bold text-darkblue-900">Delete Budget?</h3>
+                <p className="text-xs text-darkblue-500 mt-0.5">This will remove your monthly budget setting.</p>
               </div>
             </div>
-            <p className="text-sm text-slate-600">
-              Your budget of <span className="font-semibold text-slate-900">₹{formattedBudget}</span> will be deleted.
+            <p className="text-sm text-darkblue-600">
+              Your budget of <span className="font-semibold text-darkblue-900">₹{formattedBudget}</span> will be deleted.
               The dashboard will fall back to a default value until you set a new budget.
             </p>
             <div className="flex items-center gap-3">
@@ -416,7 +416,7 @@ export function MonthlyBudget() {
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium rounded-xl transition-colors"
+                className="px-4 py-2.5 bg-darkblue-100 hover:bg-darkblue-200 text-darkblue-600 text-sm font-medium rounded-xl transition-colors"
               >
                 Cancel
               </button>

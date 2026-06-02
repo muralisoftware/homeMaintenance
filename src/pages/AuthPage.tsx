@@ -55,25 +55,25 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-darkblue-900 via-darkblue-800 to-gold-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-600 rounded-2xl mb-4 shadow-lg shadow-teal-600/20">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gold-600 rounded-2xl mb-4 shadow-lg shadow-gold-600/20">
             <Home className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white">HomeWallet</h1>
-          <p className="text-slate-400 mt-1">Smart Family Finance Manager</p>
+          <p className="text-darkblue-400 mt-1">Smart Family Finance Manager</p>
         </div>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Tab Toggle */}
-          <div className="flex mb-6 bg-slate-100 rounded-xl p-1">
+          <div className="flex mb-6 bg-darkblue-100 rounded-xl p-1">
             <button
               onClick={() => { setIsLogin(true); setError(''); }}
               className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                isLogin ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                isLogin ? 'bg-white text-darkblue-900 shadow-sm' : 'text-darkblue-500'
               }`}
             >
               Sign In
@@ -81,7 +81,7 @@ export function AuthPage() {
             <button
               onClick={() => { setIsLogin(false); setError(''); }}
               className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                !isLogin ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                !isLogin ? 'bg-white text-darkblue-900 shadow-sm' : 'text-darkblue-500'
               }`}
             >
               Sign Up
@@ -92,14 +92,14 @@ export function AuthPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+                <label className="block text-sm font-medium text-darkblue-700 mb-1.5">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                    className="w-full pl-10 pr-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition"
                     placeholder="Enter your full name"
                     required={!isLogin}
                   />
@@ -108,14 +108,14 @@ export function AuthPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-darkblue-700 mb-1.5">Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                  className="w-full pl-10 pr-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition"
                   placeholder="you@example.com"
                   required
                 />
@@ -123,14 +123,14 @@ export function AuthPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-darkblue-700 mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+                  className="w-full pl-10 pr-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition"
                   placeholder="Min 6 characters"
                   required
                   minLength={6}
@@ -147,7 +147,7 @@ export function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-gold-600 hover:bg-gold-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -162,16 +162,16 @@ export function AuthPage() {
           
           {/* Divider */}
           <div className="flex items-center gap-3 mt-4 mb-4">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-medium">or continue with google</span>
-            <div className="flex-1 h-px bg-slate-200" />
+            <div className="flex-1 h-px bg-darkblue-200" />
+            <span className="text-xs text-darkblue-400 font-medium">or continue with google</span>
+            <div className="flex-1 h-px bg-darkblue-200" />
           </div>
 
           {/* Google Sign-In Button */}
           <button
             onClick={handleGoogleSignIn}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors mb-4 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 border border-darkblue-200 rounded-xl py-2.5 text-sm font-medium text-darkblue-700 hover:bg-darkblue-50 transition-colors mb-4 disabled:opacity-50"
           >
             {googleLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -182,7 +182,7 @@ export function AuthPage() {
           </button>
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-6">
+        <p className="text-center text-darkblue-500 text-xs mt-6">
           Track expenses, manage bills, and organize your family finances
         </p>
       </div>

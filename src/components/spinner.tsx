@@ -6,9 +6,9 @@ const Spinner = ({ text = "Loading your Dashboard" }) => {
               
       {/* Wallet Spinner */}
       <div className="relative w-20 h-20">
-        <div className="absolute inset-0 rounded-2xl border-4 border-teal-500 border-t-transparent animate-spin"></div>
+        <div className="absolute inset-0 rounded-2xl border-4 border-gold-500 border-t-transparent animate-spin"></div>
 
-          <div className="absolute inset-3 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="absolute inset-3 bg-gold-500 rounded-xl flex items-center justify-center shadow-lg">
           <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-8 h-8 text-white"
@@ -27,7 +27,7 @@ const Spinner = ({ text = "Loading your Dashboard" }) => {
       </div>
 
       {/* App Name */}
-      <h1 className="mt-5 text-2xl font-bold text-teal-600 tracking-wide">
+      <h1 className="mt-5 text-2xl font-bold text-gold-600 tracking-wide">
           HomeWallet
       </h1>
 

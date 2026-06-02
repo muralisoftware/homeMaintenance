@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Settings, User, Key, Copy, Check, Loader2, Pencil, X, AlertCircle, ShieldCheck,} from 'lucide-react';
+import { Settings, User, Key, Copy, Check, Loader2, Pencil, X, AlertCircle, ShieldCheck, Palette, Moon } from 'lucide-react';
 import Spinner from '../components/spinner';
+
+type Theme = 'default' | 'darkblue' | 'violet' | 'royalblue' | 'dark';
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -12,6 +14,9 @@ export function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+
+  // theme fields
+  const [currentTheme, setCurrentTheme] = useState<Theme>((localStorage.getItem('hw-theme') as Theme) || 'default');
 
   // profile fields
   const [displayName, setDisplayName] = useState('');
@@ -84,6 +89,16 @@ export function SettingsPage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
+  const handleThemeChange = (theme: Theme) => {
+    setCurrentTheme(theme);
+    localStorage.setItem('hw-theme', theme);
+    if (theme === 'default') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+  };
+
   const handlePasswordChange = async () => {
     setPasswordError('');
     if (!newPassword) {
@@ -131,8 +146,110 @@ export function SettingsPage() {
 
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Manage your account and preferences</p>
+        <h2 className="text-2xl font-bold text-darkblue-900">Settings</h2>
+        <p className="text-sm text-darkblue-500 mt-0.5">Manage your account and preferences</p>
+      </div>
+
+      {/* ── Theme Selection Card ── */}
+      <div className="bg-white rounded-2xl border border-darkblue-200 overflow-hidden">
+        <div className="p-5 border-b border-darkblue-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
+              <Palette className="w-5 h-5 text-violet-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-darkblue-900">App Theme</h3>
+              <p className="text-xs text-darkblue-500">Choose your preferred color scheme</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Default Theme */}
+          <button
+            onClick={() => handleThemeChange('default')}
+            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+              currentTheme === 'default' ? 'border-darkgreen-600 bg-darkgreen-50' : 'border-darkblue-100 hover:border-darkblue-200'
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: '#023020' }}>
+              <div className="w-3 h-3 rounded-full bg-gold-500" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-darkblue-900">Dark Green & Gold</p>
+              <p className="text-xs text-darkblue-400">Default Classic</p>
+            </div>
+            {currentTheme === 'default' && <Check className="w-4 h-4 text-darkgreen-600 ml-auto" />}
+          </button>
+
+          {/* Dark Blue Theme */}
+          <button
+            onClick={() => handleThemeChange('darkblue')}
+            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+              currentTheme === 'darkblue' ? 'border-darkblue-600 bg-darkblue-50' : 'border-darkblue-100 hover:border-darkblue-200'
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-darkblue-900 flex items-center justify-center shadow-sm">
+              <div className="w-3 h-3 rounded-full bg-gold-500" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-darkblue-900">Dark Blue & Gold</p>
+              <p className="text-xs text-darkblue-400">Premium Professional</p>
+            </div>
+            {currentTheme === 'darkblue' && <Check className="w-4 h-4 text-darkblue-600 ml-auto" />}
+          </button>
+
+          {/* Violet Theme */}
+          <button
+            onClick={() => handleThemeChange('violet')}
+            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+              currentTheme === 'violet' ? 'border-violet-600 bg-violet-50' : 'border-darkblue-100 hover:border-darkblue-200'
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-violet-900 flex items-center justify-center shadow-sm">
+              <div className="w-3 h-3 rounded-full bg-gold-500" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-darkblue-900">Violet & Gold</p>
+              <p className="text-xs text-darkblue-400">Elegant Modern</p>
+            </div>
+            {currentTheme === 'violet' && <Check className="w-4 h-4 text-violet-600 ml-auto" />}
+          </button>
+
+          {/* Royal Blue Theme */}
+          <button
+            onClick={() => handleThemeChange('royalblue')}
+            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+              currentTheme === 'royalblue' ? 'border-royalblue-600 bg-royalblue-50' : 'border-darkblue-100 hover:border-darkblue-200'
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-royalblue-900 flex items-center justify-center shadow-sm">
+              <div className="w-3 h-3 rounded-full bg-gold-500" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-darkblue-900">Royal Blue & Gold</p>
+              <p className="text-xs text-darkblue-400">Majestic Elegance</p>
+            </div>
+            {currentTheme === 'royalblue' && <Check className="w-4 h-4 text-royalblue-600 ml-auto" />}
+          </button>
+
+          {/* Dark Mode */}
+          <button
+            onClick={() => handleThemeChange('dark')}
+            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+              currentTheme === 'dark' ? 'border-slate-600 bg-slate-900' : 'border-darkblue-100 hover:border-darkblue-200'
+            }`}
+          >
+            <div className="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center shadow-sm border border-slate-800">
+              <Moon className="w-4 h-4 text-gold-500" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-darkblue-900">Dark Mode</p>
+              <p className="text-xs text-darkblue-400">Night Guardian</p>
+            </div>
+            {currentTheme === 'dark' && <Check className="w-4 h-4 text-slate-400 ml-auto" />}
+          </button>
+        </div>
       </div>
 
       {/* Global success */}
@@ -152,15 +269,15 @@ export function SettingsPage() {
       )}
 
       {/* ── Profile Card ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100">
+      <div className="bg-white rounded-2xl border border-darkblue-200 overflow-hidden">
+        <div className="p-5 border-b border-darkblue-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
-              <User className="w-5 h-5 text-teal-600" />
+            <div className="w-10 h-10 rounded-xl bg-gold-50 flex items-center justify-center">
+              <User className="w-5 h-5 text-gold-600" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Profile</h3>
-              <p className="text-xs text-slate-500">Your display name updates across the entire app</p>
+              <h3 className="text-base font-semibold text-darkblue-900">Profile</h3>
+              <p className="text-xs text-darkblue-500">Your display name updates across the entire app</p>
             </div>
           </div>
         </div>
@@ -169,7 +286,7 @@ export function SettingsPage() {
 
           {/* Display Name */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-medium text-darkblue-700 uppercase tracking-wide mb-1.5">
               Display Name
             </label>
             <div className="relative">
@@ -177,42 +294,42 @@ export function SettingsPage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => { setDisplayName(e.target.value); setError(''); }}
-                className="w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-4 py-2.5 pr-10 border border-darkblue-200 rounded-xl text-sm text-darkblue-900 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
                 placeholder="Enter your display name"
               />
-              <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              <Pencil className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-darkblue-400 pointer-events-none" />
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-darkblue-400 mt-1">
               This name is shown across the app and in Supabase Auth metadata.
             </p>
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-medium text-darkblue-700 uppercase tracking-wide mb-1.5">
               Phone
             </label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm text-darkblue-900 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
               placeholder="+91 XXXXX XXXXX"
             />
           </div>
 
           {/* Email — read only */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-medium text-darkblue-700 uppercase tracking-wide mb-1.5">
               Email
             </label>
             <input
               type="email"
               value={user?.email || ''}
-              className="w-full px-4 py-2.5 border border-slate-100 rounded-xl text-sm bg-slate-50 text-slate-400 cursor-not-allowed"
+              className="w-full px-4 py-2.5 border border-darkblue-100 rounded-xl text-sm bg-darkblue-50 text-darkblue-400 cursor-not-allowed"
               disabled
             />
-            <p className="text-xs text-slate-400 mt-1">Email cannot be changed here.</p>
+            <p className="text-xs text-darkblue-400 mt-1">Email cannot be changed here.</p>
           </div>
 
           {/* Error */}
@@ -227,7 +344,7 @@ export function SettingsPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
           >
             {saving
               ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -240,16 +357,16 @@ export function SettingsPage() {
       </div>
 
       {/* ── Password Card ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100">
+      <div className="bg-white rounded-2xl border border-darkblue-200 overflow-hidden">
+        <div className="p-5 border-b border-darkblue-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-slate-600" />
+              <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-darkblue-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-slate-900">Password</h3>
-                <p className="text-xs text-slate-500">Change your account password</p>
+                <h3 className="text-base font-semibold text-darkblue-900">Password</h3>
+                <p className="text-xs text-darkblue-500">Change your account password</p>
               </div>
             </div>
             <button
@@ -259,7 +376,7 @@ export function SettingsPage() {
                 setNewPassword('');
                 setConfirmPassword('');
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-darkblue-600 bg-darkblue-100 hover:bg-darkblue-200 rounded-lg transition-colors"
             >
               {showPasswordForm
                 ? <><X className="w-3.5 h-3.5" /> Cancel</>
@@ -271,20 +388,20 @@ export function SettingsPage() {
         {showPasswordForm && (
           <div className="p-5 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-medium text-darkblue-700 uppercase tracking-wide mb-1.5">
                 New Password
               </label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); }}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm text-darkblue-900 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
                 placeholder="Min. 6 characters"
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-medium text-darkblue-700 uppercase tracking-wide mb-1.5">
                 Confirm New Password
               </label>
               <input
@@ -292,7 +409,7 @@ export function SettingsPage() {
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handlePasswordChange(); }}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm text-darkblue-900 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
                 placeholder="Re-enter new password"
               />
             </div>
@@ -307,7 +424,7 @@ export function SettingsPage() {
             <button
               onClick={handlePasswordChange}
               disabled={passwordSaving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gold-600 hover:bg-gold-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
             >
               {passwordSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               {passwordSaving ? 'Updating…' : 'Update Password'}
@@ -317,32 +434,32 @@ export function SettingsPage() {
 
         {!showPasswordForm && (
           <div className="px-5 py-4">
-            <p className="text-sm text-slate-400">••••••••••••</p>
+            <p className="text-sm text-darkblue-400">••••••••••••</p>
           </div>
         )}
       </div>
 
       {/* ── User ID Card ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100">
+      <div className="bg-white rounded-2xl border border-darkblue-200 overflow-hidden">
+        <div className="p-5 border-b border-darkblue-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
-              <Key className="w-5 h-5 text-slate-600" />
+            <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center">
+              <Key className="w-5 h-5 text-darkblue-600" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Your User ID</h3>
-              <p className="text-xs text-slate-500">Share this with family members to add you to their group</p>
+              <h3 className="text-base font-semibold text-darkblue-900">Your User ID</h3>
+              <p className="text-xs text-darkblue-500">Share this with family members to add you to their group</p>
             </div>
           </div>
         </div>
         <div className="p-5">
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-600 font-mono break-all">
+            <code className="flex-1 px-4 py-2.5 bg-darkblue-50 rounded-xl text-xs text-darkblue-600 font-mono break-all">
               {user?.id}
             </code>
             <button
               onClick={copyUserId}
-              className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 transition-colors shrink-0"
+              className="p-2.5 rounded-xl bg-darkblue-50 hover:bg-darkblue-100 text-darkblue-500 transition-colors shrink-0"
               title="Copy User ID"
             >
               {copied
@@ -354,31 +471,31 @@ export function SettingsPage() {
       </div>
 
       {/* ── About Card ── */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="p-5 border-b border-slate-100">
+      <div className="bg-white rounded-2xl border border-darkblue-200 overflow-hidden">
+        <div className="p-5 border-b border-darkblue-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center">
-              <Settings className="w-5 h-5 text-slate-600" />
+            <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-darkblue-600" />
             </div>
-            <h3 className="text-base font-semibold text-slate-900">About</h3>
+            <h3 className="text-base font-semibold text-darkblue-900">About</h3>
           </div>
         </div>
         <div className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">App Name</span>
-            <span className="text-sm font-medium text-slate-900">HomeWallet</span>
+            <span className="text-sm text-darkblue-500">App Name</span>
+            <span className="text-sm font-medium text-darkblue-900">HomeWallet</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">Version</span>
-            <span className="text-sm font-medium text-slate-900">1.0.0</span>
+            <span className="text-sm text-darkblue-500">Version</span>
+            <span className="text-sm font-medium text-darkblue-900">1.0.0</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">Plan</span>
-            <span className="text-sm font-medium text-teal-600 bg-teal-50 px-2 py-0.5 rounded-lg">Free</span>
+            <span className="text-sm text-darkblue-500">Plan</span>
+            <span className="text-sm font-medium text-gold-600 bg-gold-50 px-2 py-0.5 rounded-lg">Free</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-500">Logged in as</span>
-            <span className="text-sm font-medium text-slate-900 truncate max-w-[200px]">{user?.email}</span>
+            <span className="text-sm text-darkblue-500">Logged in as</span>
+            <span className="text-sm font-medium text-darkblue-900 truncate max-w-[200px]">{user?.email}</span>
           </div>
         </div>
       </div>

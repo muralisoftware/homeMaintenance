@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { exportToPDF, exportToExcel } from '../lib/exportUtils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type NoteColor = 'yellow' | 'teal' | 'rose' | 'sky' | 'amber' | 'violet';
+type NoteColor = 'yellow' | 'gold' | 'rose' | 'sky' | 'amber' | 'violet';
 
 interface Note {
   id: string;
@@ -35,7 +35,7 @@ interface NoteRow {
 // ─── Constants ───────────────────────────────────────────────────────────────
 const COLORS: { key: NoteColor; bg: string; border: string; header: string; text: string; dot: string }[] = [
   { key: 'yellow', bg: '#fffbeb', border: '#fde68a', header: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
-  { key: 'teal',   bg: '#f0fdfa', border: '#99f6e4', header: '#ccfbf1', text: '#134e4a', dot: '#14b8a6' },
+  { key: 'gold',   bg: '#f0fdfa', border: '#99f6e4', header: '#ccfbf1', text: '#134e4a', dot: '#14b8a6' },
   { key: 'rose',   bg: '#fff1f2', border: '#fecdd3', header: '#ffe4e6', text: '#881337', dot: '#f43f5e' },
   { key: 'sky',    bg: '#f0f9ff', border: '#bae6fd', header: '#e0f2fe', text: '#0c4a6e', dot: '#0ea5e9' },
   { key: 'amber',  bg: '#fffbeb', border: '#fed7aa', header: '#ffedd5', text: '#7c2d12', dot: '#f97316' },
@@ -894,7 +894,7 @@ export function NotesPage() {
                   <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1">
                     <button
                       onClick={handleExportPDF}
-                      className="p-1.5 hover:bg-white/5 text-slate-400 transition-colors rounded-lg flex items-center gap-1.5 text-[10px] font-medium"
+                      className="p-1.5 hover:bg-white/5 text-darkblue-400 transition-colors rounded-lg flex items-center gap-1.5 text-[10px] font-medium"
                       title="Download PDF"
                     >
                       <Download className="w-3.5 h-3.5 text-rose-500" />
@@ -903,7 +903,7 @@ export function NotesPage() {
                     <div className="w-px h-3 bg-white/10 mx-1" />
                     <button
                       onClick={handleExportExcel}
-                      className="p-1.5 hover:bg-white/5 text-slate-400 transition-colors rounded-lg flex items-center gap-1.5 text-[10px] font-medium"
+                      className="p-1.5 hover:bg-white/5 text-darkblue-400 transition-colors rounded-lg flex items-center gap-1.5 text-[10px] font-medium"
                       title="Download Excel"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />

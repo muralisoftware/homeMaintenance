@@ -3,13 +3,66 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary-main: theme('colors.darkgreen.900');
+    --primary-bg: theme('colors.darkgreen.50');
+    --primary-border: theme('colors.darkgreen.200');
+    --primary-text: theme('colors.darkgreen.900');
+    --accent-main: theme('colors.gold.500');
+    --accent-bg: theme('colors.gold.50');
+    --accent-text: theme('colors.gold.700');
+  }
+
+  [data-theme='darkblue'] {
+    --primary-main: theme('colors.darkblue.900');
+    --primary-bg: theme('colors.darkblue.50');
+    --primary-border: theme('colors.darkblue.200');
+    --primary-text: theme('colors.darkblue.900');
+    --accent-main: theme('colors.gold.500');
+    --accent-bg: theme('colors.gold.50');
+    --accent-text: theme('colors.gold.700');
+  }
+
+  [data-theme='violet'] {
+    --primary-main: theme('colors.violet.900');
+    --primary-bg: theme('colors.violet.50');
+    --primary-border: theme('colors.violet.200');
+    --primary-text: theme('colors.violet.900');
+    --accent-main: theme('colors.gold.500');
+    --accent-bg: theme('colors.gold.50');
+    --accent-text: theme('colors.gold.700');
+  }
+
+  [data-theme='royalblue'] {
+    --primary-main: theme('colors.royalblue.900');
+    --primary-bg: theme('colors.royalblue.50');
+    --primary-border: theme('colors.royalblue.200');
+    --primary-text: theme('colors.royalblue.900');
+    --accent-main: theme('colors.gold.500');
+    --accent-bg: theme('colors.gold.50');
+    --accent-text: theme('colors.gold.700');
+  }
+
+  [data-theme='dark'] {
+    --primary-main: theme('colors.slate.950');
+    --primary-bg: theme('colors.slate.900');
+    --primary-border: theme('colors.slate.800');
+    --primary-text: theme('colors.slate.100');
+    --accent-main: theme('colors.gold.500');
+    --accent-bg: theme('colors.slate.800');
+    --accent-text: theme('colors.gold.400');
+  }
+
   * {
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-darkblue-50 text-darkblue-900 antialiased;
+    background-color: var(--primary-bg);
+    color: var(--primary-text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   ::-webkit-scrollbar {
@@ -22,11 +75,11 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-200 rounded-full;
+    @apply bg-darkblue-200 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-300;
+    @apply bg-darkblue-300;
   }
 }
 

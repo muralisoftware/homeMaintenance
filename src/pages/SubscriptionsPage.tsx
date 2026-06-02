@@ -150,23 +150,23 @@ export function SubscriptionsPage() {
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Subscriptions</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Track recurring subscriptions and services</p>
+          <h2 className="text-2xl font-bold text-darkblue-900">Subscriptions</h2>
+          <p className="text-sm text-darkblue-500 mt-0.5">Track recurring subscriptions and services</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+          <div className="flex items-center bg-white border border-darkblue-200 rounded-xl p-1 shadow-sm">
             <button
               onClick={handleExportPDF}
-              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              className="p-2 hover:bg-darkblue-50 text-darkblue-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
               title="Download PDF"
             >
               <Download className="w-4 h-4 text-rose-500" />
               PDF
             </button>
-            <div className="w-px h-4 bg-slate-200 mx-1" />
+            <div className="w-px h-4 bg-darkblue-200 mx-1" />
             <button
               onClick={handleExportExcel}
-              className="p-2 hover:bg-slate-50 text-slate-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
+              className="p-2 hover:bg-darkblue-50 text-darkblue-600 transition-colors rounded-lg flex items-center gap-2 text-xs font-medium"
               title="Download Excel"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
@@ -175,7 +175,7 @@ export function SubscriptionsPage() {
           </div>
           <button
             onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: '', provider: '', amount: '', billing_cycle: 'monthly', next_billing_date: new Date().toISOString().split('T')[0], category: 'entertainment' }); }}
-            className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Add Subscription
@@ -185,17 +185,17 @@ export function SubscriptionsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-500 mb-1">Active Subscriptions</p>
-          <p className="text-2xl font-bold text-slate-900">{activeSubs.length}</p>
+        <div className="bg-white rounded-2xl border border-darkblue-200 p-4">
+          <p className="text-xs text-darkblue-500 mb-1">Active Subscriptions</p>
+          <p className="text-2xl font-bold text-darkblue-900">{activeSubs.length}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-500 mb-1">Monthly Cost</p>
-          <p className="text-2xl font-bold text-teal-600">₹{Math.round(monthlyTotal).toLocaleString('en-IN')}</p>
+        <div className="bg-white rounded-2xl border border-darkblue-200 p-4">
+          <p className="text-xs text-darkblue-500 mb-1">Monthly Cost</p>
+          <p className="text-2xl font-bold text-gold-600">₹{Math.round(monthlyTotal).toLocaleString('en-IN')}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4">
-          <p className="text-xs text-slate-500 mb-1">Yearly Cost</p>
-          <p className="text-2xl font-bold text-slate-900">₹{Math.round(yearlyTotal).toLocaleString('en-IN')}</p>
+        <div className="bg-white rounded-2xl border border-darkblue-200 p-4">
+          <p className="text-xs text-darkblue-500 mb-1">Yearly Cost</p>
+          <p className="text-2xl font-bold text-darkblue-900">₹{Math.round(yearlyTotal).toLocaleString('en-IN')}</p>
         </div>
       </div>
 
@@ -203,43 +203,43 @@ export function SubscriptionsPage() {
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="text-lg font-semibold text-slate-900">{editingId ? 'Edit Subscription' : 'Add Subscription'}</h3>
-              <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+            <div className="flex items-center justify-between p-5 border-b border-darkblue-100">
+              <h3 className="text-lg font-semibold text-darkblue-900">{editingId ? 'Edit Subscription' : 'Add Subscription'}</h3>
+              <button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-darkblue-700 mb-1">Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
                   placeholder="e.g., Netflix, Spotify"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Provider</label>
+                <label className="block text-sm font-medium text-darkblue-700 mb-1">Provider</label>
                 <input
                   type="text"
                   value={form.provider}
                   onChange={(e) => setForm({ ...form, provider: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
                   placeholder="e.g., Netflix Inc."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Amount (₹)</label>
+                <label className="block text-sm font-medium text-darkblue-700 mb-1">Amount (₹)</label>
                 <div className="relative">
-                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
                   <input
                     type="number"
                     value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full pl-10 pr-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
                     placeholder="0"
                     required
                     min="0"
@@ -249,11 +249,11 @@ export function SubscriptionsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Billing Cycle</label>
+                  <label className="block text-sm font-medium text-darkblue-700 mb-1">Billing Cycle</label>
                   <select
                     value={form.billing_cycle}
                     onChange={(e) => setForm({ ...form, billing_cycle: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white"
                   >
                     <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
@@ -261,11 +261,11 @@ export function SubscriptionsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                  <label className="block text-sm font-medium text-darkblue-700 mb-1">Category</label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                    className="w-full px-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 bg-white"
                   >
                     {SUB_CATEGORIES.map((c) => (
                       <option key={c} value={c}>{subIcons[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</option>
@@ -274,21 +274,21 @@ export function SubscriptionsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Next Billing Date</label>
+                <label className="block text-sm font-medium text-darkblue-700 mb-1">Next Billing Date</label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-darkblue-400" />
                   <input
                     type="date"
                     value={form.next_billing_date}
                     onChange={(e) => setForm({ ...form, next_billing_date: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full pl-10 pr-4 py-2.5 border border-darkblue-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
                     required
                   />
                 </div>
               </div>
               <button
                 type="submit"
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
+                className="w-full bg-gold-600 hover:bg-gold-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
                 {editingId ? 'Update Subscription' : 'Add Subscription'}
               </button>
@@ -299,7 +299,7 @@ export function SubscriptionsPage() {
 
       {/* List */}
       { subs.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-darkblue-400">
           <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-40" />
           <p className="text-sm">No subscriptions tracked yet</p>
         </div>
@@ -308,37 +308,37 @@ export function SubscriptionsPage() {
           {subs.map((sub) => (
             <div
               key={sub.id}
-              className={`bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 hover:shadow-sm transition-shadow ${
+              className={`bg-white rounded-xl border border-darkblue-200 p-4 flex items-center gap-3 hover:shadow-sm transition-shadow ${
                 !sub.is_active ? 'opacity-60' : ''
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-lg">
+              <div className="w-10 h-10 rounded-xl bg-darkblue-50 flex items-center justify-center text-lg">
                 {subIcons[sub.category] || '📌'}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-slate-900">{sub.name}</p>
+                  <p className="text-sm font-medium text-darkblue-900">{sub.name}</p>
                   {!sub.is_active && (
-                    <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">PAUSED</span>
+                    <span className="text-[10px] font-medium text-darkblue-400 bg-darkblue-100 px-1.5 py-0.5 rounded">PAUSED</span>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-darkblue-500">
                   {sub.provider || 'No provider'} · {sub.billing_cycle} · Next: {new Date(sub.next_billing_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </p>
               </div>
-              <p className="text-sm font-semibold text-slate-900">₹{Number(sub.amount).toLocaleString('en-IN')}</p>
+              <p className="text-sm font-semibold text-darkblue-900">₹{Number(sub.amount).toLocaleString('en-IN')}</p>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleEdit(sub)}
-                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-teal-600 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-gold-600 transition-colors"
                   title="Edit"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => toggleActive(sub)}
-                  className={`p-1.5 rounded-lg hover:bg-slate-100 transition-colors ${
-                    sub.is_active ? 'text-emerald-500 hover:text-slate-400' : 'text-slate-300 hover:text-emerald-500'
+                  className={`p-1.5 rounded-lg hover:bg-darkblue-100 transition-colors ${
+                    sub.is_active ? 'text-emerald-500 hover:text-darkblue-400' : 'text-darkblue-300 hover:text-emerald-500'
                   }`}
                   title={sub.is_active ? 'Pause' : 'Resume'}
                 >
@@ -346,7 +346,7 @@ export function SubscriptionsPage() {
                 </button>
                 <button
                   onClick={() => handleDelete(sub.id)}
-                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-500 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-darkblue-100 text-darkblue-300 hover:text-red-500 transition-colors"
                   title="Delete"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
