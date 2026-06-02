@@ -7,6 +7,11 @@ import {
   ArrowUpRight, Download, FileSpreadsheet, FileText, Pencil, X, Check,
 } from 'lucide-react';
 import Spinner from '../components/spinner';
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, 
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
+  AreaChart, Area, CartesianGrid
+} from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -40,6 +45,11 @@ interface LoanItem {
   outstanding_balance: number;
   emi_amount: number;
   emi_due_date: string;
+}
+
+interface MonthlyData {
+  month: string;
+  amount: number;
 }
 
 const categoryColors: Record<string, string> = {
@@ -234,6 +244,7 @@ export function Dashboard() {
   const [upcomingBills, setUpcomingBills] = useState<BillItem[]>([]);
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [loans, setLoans] = useState<LoanItem[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyData[]>([]);
 
   // ── Budget state ──
   const [monthlyBudget, setMonthlyBudget] = useState(50000);
@@ -253,12 +264,19 @@ export function Dashboard() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    const [expensesRes, billsRes, subsRes, loansRes, settingsRes] = await Promise.all([
+    // Get date 6 months ago
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
+
+    const [expensesRes, billsRes, subsRes, loansRes, settingsRes, historyRes] = await Promise.all([
       supabase.from('expenses').select('amount, category').eq('user_id', user!.id).gte('expense_date', startOfMonth).lte('expense_date', endOfMonth),
       supabase.from('bills').select('id, bill_type, amount, due_date, is_paid, provider').eq('user_id', user!.id).gte('due_date', new Date().toISOString().split('T')[0]).order('due_date', { ascending: true }).limit(5),
       supabase.from('subscriptions').select('id, name, amount, billing_cycle, next_billing_date, is_active').eq('user_id', user!.id).eq('is_active', true),
       supabase.from('loans').select('id, loan_type, outstanding_balance, emi_amount, emi_due_date').eq('user_id', user!.id).eq('is_active', true),
       supabase.from('user_settings').select('monthly_budget').eq('user_id', user!.id).single(),
+      supabase.from('expenses').select('amount, expense_date').eq('user_id', user!.id).gte('expense_date', sixMonthsAgoStr).lte('expense_date', endOfMonth),
     ]);
 
     // Load budget — fall back to 50000 if no row yet
@@ -280,6 +298,31 @@ export function Dashboard() {
     setUpcomingBills(billsRes.data || []);
     setSubscriptions(subsRes.data || []);
     setLoans(loansRes.data || []);
+
+    // Process monthly trend
+    const history = historyRes.data || [];
+    const monthlyMap: Record<string, number> = {};
+    
+    // Initialize last 6 months
+    for (let i = 0; i < 6; i++) {
+      const d = new Date();
+      d.setMonth(now.getMonth() - i);
+      const key = d.toLocaleDateString('en-IN', { month: 'short' });
+      monthlyMap[key] = 0;
+    }
+
+    history.forEach(e => {
+      const key = new Date(e.expense_date).toLocaleDateString('en-IN', { month: 'short' });
+      if (monthlyMap[key] !== undefined) {
+        monthlyMap[key] += Number(e.amount);
+      }
+    });
+
+    const trendData = Object.entries(monthlyMap)
+      .map(([month, amount]) => ({ month, amount }))
+      .reverse();
+    
+    setMonthlyTrend(trendData);
     setLoading(false);
   };
 
@@ -417,10 +460,110 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* Premium Analytics Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Trend Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-darkblue-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-semibold text-darkblue-900">Monthly Expense Trend</h3>
+              <p className="text-xs text-darkblue-400">Last 6 months spending pattern</p>
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyTrend}>
+                <defs>
+                  <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#d4af37" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#d4af37" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#94a3b8' }}
+                  tickFormatter={(value) => `₹${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    borderRadius: '12px', 
+                    border: 'none', 
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    fontSize: '12px'
+                  }}
+                  formatter={(value: any) => [`₹${value.toLocaleString('en-IN')}`, 'Amount']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="amount" 
+                  stroke="#d4af37" 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorAmount)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Expense Breakdown Pie Chart */}
+        <div className="bg-white rounded-2xl border border-darkblue-200 p-6 shadow-sm">
+          <h3 className="text-base font-semibold text-darkblue-900 mb-2">Breakdown</h3>
+          <p className="text-xs text-darkblue-400 mb-6">Current month by category</p>
+          <div className="h-64 w-full relative">
+            {expenseSummary.byCategory.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center flex-col text-darkblue-300">
+                <Receipt className="w-10 h-10 mb-2 opacity-20" />
+                <p className="text-xs">No data available</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={expenseSummary.byCategory}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="total"
+                  >
+                    {expenseSummary.byCategory.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={categoryColors[entry.category] || '#94a3b8'} stroke="none" />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', fontSize: '12px' }}
+                    formatter={(value: any) => [`₹${value.toLocaleString('en-IN')}`, 'Total']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {expenseSummary.byCategory.slice(0, 4).map((cat) => (
+              <div key={cat.category} className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColors[cat.category] }} />
+                <span className="text-[10px] font-medium text-darkblue-600 capitalize truncate">{cat.category}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expense Breakdown */}
+        {/* Expense Breakdown List */}
         <div className="bg-white rounded-2xl border border-darkblue-200 p-6">
-          <h3 className="text-base font-semibold text-darkblue-900 mb-4">Expense Breakdown</h3>
+          <h3 className="text-base font-semibold text-darkblue-900 mb-4">Category Details</h3>
           {expenseSummary.byCategory.length === 0 ? (
             <div className="text-center py-8 text-darkblue-400">
               <Receipt className="w-10 h-10 mx-auto mb-2 opacity-40" />
