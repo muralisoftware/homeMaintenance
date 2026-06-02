@@ -30,7 +30,7 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
   const { user, signOut } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -41,13 +41,13 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto h-full ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between px-6 h-16 border-b border-slate-200">
+          <div className="flex items-center justify-between px-6 h-16 border-b border-slate-200 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center">
                 <Home className="w-5 h-5 text-white" />
@@ -91,7 +91,7 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
           </nav>
 
           {/* User section */}
-          <div className="px-3 pb-4">
+          <div className="px-3 pb-4 flex-shrink-0">
             <div className="bg-slate-50 rounded-xl p-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-semibold text-sm">
@@ -115,9 +115,9 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* Top bar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 flex-shrink-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600"
@@ -136,11 +136,11 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto bg-slate-50">
           {children}
         </main>
 
-        <div style={{ borderTop: '1px solid rgba(20,184,166,0.1)', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <footer className="flex-shrink-0 bg-white" style={{ borderTop: '1px solid rgba(20,184,166,0.1)', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <p style={{ margin: 0, fontSize: '13px', color: 'rgba(148,163,184,0.7)', fontFamily: "'Syne', sans-serif" }}>
             © 2026 <span style={{ color: '#14b8a6', fontWeight: 700 }}>muralisoftware</span>. All rights reserved.
           </p>
@@ -148,7 +148,7 @@ export function AppLayout({ currentRoute, onNavigate, children }: AppLayoutProps
             <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.5)', cursor: 'pointer' }}>Privacy</span>
             <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.5)', cursor: 'pointer' }}>Terms</span>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );
